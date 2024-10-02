@@ -41,23 +41,3 @@ result: userPage(
 }
 
 """
-
-
-mappers = {
-    "id": "id"
-}
-
-mappers_0 = {
-    "id": "id",
-    "name": "name",
-    "surname": "surname",
-    "email": "email",
-    "eventid": "presences.event.id",
-    "eventname": "presences.event.name",
-    "startdate": "presences.event.startdate",
-    "enddate": "presences.event.enddate",
-    "eventTypeid": "presences.event.eventType.id",
-    "eventTypename": "presences.event.eventType.name",
-    "presenceTypeid": "presences.presenceType.id",
-    "presenceTypename": "presences.presenceType.name"
-}
