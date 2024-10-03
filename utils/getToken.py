@@ -18,3 +18,4 @@ async def getToken(username, password):
             tokenJson = await resp.json()
             # print(tokenJson)
     return tokenJson.get("token", None)
+

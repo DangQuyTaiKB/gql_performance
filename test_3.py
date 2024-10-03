@@ -17,6 +17,10 @@ async def getToken(username, password):
             # print(resp.status)
             tokenJson = await resp.json()
             # print(tokenJson)
+            print("\n")
+            expires_in = tokenJson.get("expires_in")
+            print(expires_in)
+            print("\n")
     return tokenJson.get("token", None)
 
            
