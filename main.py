@@ -24,7 +24,7 @@ from utils.send_payload import query
 from utils.getToken import getToken
 from utils.auth import username, password
 from utils.load_test import load_test, load_test_1, load_test_2
-
+from utils.stress_test import stress_test, stress_test_2
 from query.userPage import queryStr_0, queryStr
 
 
@@ -67,15 +67,6 @@ async def loadTest1():
     
     # results, response_times = await load_test_1(queryStr_0, token, num_requests, concurrent_limit)
     results, response_times, avg_response_time, min_response_time, max_response_time, median_response_time, successful_requests, failure_count = await load_test_1(queryStr_0, token, num_requests, concurrent_limit)
-    # print(response_times)
-    # # Process the results if needed
-    # successful_requests = [r for r, _ in results if isinstance(r, dict) and 'data' in r]
-    
-    # # Calculate additional statistics
-    # avg_response_time = sum(response_times) / len(response_times)
-    # min_response_time = min(response_times)
-    # max_response_time = max(response_times)
-    # print the nested dictionary of [order, response times, response]
     dict_response_times = {}
     for i in range(len(response_times)):
         dict_response_times[i] = response_times[i]
@@ -131,3 +122,34 @@ async def loadTest2():
         # Handle unexpected errors
         print(f"Error in loadTest2: {e}")
         return {"error": "An error occurred during load testing"}
+
+
+@app.get("/stress_test")
+async def run_stress_test_api():
+    token = await getToken(username, password)
+    query = "{userPage{id name surname email}}"
+    max_concurrent_users = 100
+    ramp_up_time = 2  # seconds
+    test_duration = 30  # seconds
+
+    result = await stress_test(query, token, max_concurrent_users, ramp_up_time, test_duration)
+    return result
+
+
+@app.get("/stress_test_2")
+async def stress_test_endpoint():
+    token = await getToken(username, password)  # Assuming getToken is implemented elsewhere
+    query = "{userPage{id name surname email}}"  # Your GraphQL query
+    initial_requests = 50  # Starting with 50 concurrent requests
+    step_size = 50  # Increase by 50 requests each step
+    max_limit = 200  # Stop at requests
+    
+    # Run the stress test
+    results = await stress_test_2(query, token, initial_requests, step_size, max_limit)
+    
+    print("\nFinal Stress Test Results:")
+    for result in results:
+        print(result)
+
+    return {"results": results}
+
