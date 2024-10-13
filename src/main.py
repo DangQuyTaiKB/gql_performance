@@ -2,10 +2,9 @@
 from fastapi.responses import HTMLResponse
 import json
 import os
-import asyncio
 from utils.send_payload import query
 from utils.getToken import getToken
-from utils.auth import username, password
+# from utils.auth import username, password
 from utils.load_test import load_test_1, load_test_2, parallel_load_test
 from utils.stress_test import stress_test_concurrent, enhanced_stress_test_parallel
 from query.userPage import queryStr_0, queryStr
@@ -13,6 +12,8 @@ import subprocess
 
 app = FastAPI()
 gqlurl = os.getenv("GQL_PROXY", "http://localhost:33001/api/gql")
+username = os.getenv("GQL_USERNAME", "john.newbie@world.com")
+password = os.getenv("GQL_PASSWORD", "john.newbie@world.com")
 
 ############ Intro FastAPI ################
 
@@ -36,12 +37,11 @@ async def fullPipe():
 
 ############# Load Test ###############
 
-@app.get("/loadTest_time")
+@app.get("/loadTest_1")
 async def loadTest1():
     token = await getToken(username, password)
     num_requests = 100
     concurrent_limit = 5
-    # gqlurl = os.getenv("GQL_PROXY", "http://localhost:33001/api/gql")
 
     results = await load_test_1(queryStr_0, token, num_requests, concurrent_limit, gqlurl)
     outfile(results['results'], 'response')
@@ -49,12 +49,11 @@ async def loadTest1():
     return time_result
 
 
-@app.get("/loadTest_time_2")
+@app.get("/loadTest_2")
 async def loadTest2():
     token = await getToken(username, password)
     requests_per_user = 20 # number of requests per user
     concurrent_limit = 5 # number of users concurrently
-    # gqlurl = os.getenv("GQL_PROXY", "http://localhost:33001/api/gql")
 
     results = await load_test_2(queryStr_0, token, requests_per_user, concurrent_limit, gqlurl)
     time_result = {key: value for key, value in results.items() if key != "results"}
@@ -65,7 +64,6 @@ async def parallelLoadTest():
     token = await getToken(username, password)
     num_requests = 100
     num_workers = 10
-    gqlurl = os.getenv("GQL_PROXY", "http://localhost:33001/api/gql")
     payload = {"query": queryStr_0, "variables": {}}
 
     # Call the updated parallel_load_test function
@@ -79,8 +77,8 @@ async def parallelLoadTest():
 
 ############# Stress Test ###############
 
-@app.get("/stress_test_1")
-async def stress_test_1_endpoint():
+@app.get("/stress_test_concurrent")
+async def stress_test_concurrent_endpoint():
     # Get the token
     token = await getToken(username, password) 
     
@@ -97,8 +95,8 @@ async def stress_test_1_endpoint():
     results = await stress_test_concurrent(query, token, gqlurl, initial_requests, step_size, max_limit, recovery_steps)
     return {"results": results}
 
-@app.get("/enhanced_stress_test")
-async def enhanced_stress_test_endpoint():
+@app.get("/enhanced_stress_test_parallel")
+async def enhanced_stress_test_parallel_endpoint():
     # Get the token
     token = await getToken(username, password)
     
@@ -117,11 +115,11 @@ async def enhanced_stress_test_endpoint():
 
 ############# Locust Test ###############
 
-@app.get("/run_locust")
-async def run_locust_test():
+@app.get("/run_locust_concurrent")
+async def run_locust_concurrent_test():
     try:
         process = subprocess.Popen(
-            ["locust", "-f", "locust_concurrent.py"],
+            ["locust", "-f", "locust/locust_concurrent.py"],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             universal_newlines=True
@@ -152,7 +150,7 @@ async def run_locust_test():
 async def run_locust_parallel_test():
     try:
         process = subprocess.Popen(
-            ["locust", "-f", "locust_parallel.py"],
+            ["locust", "-f", "locust/locust_paralel.py"],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             universal_newlines=True

@@ -2,7 +2,10 @@
 import time
 import json
 import os
-from utils.auth import username, password
+# from utils.auth import username, password
+
+username = os.getenv("GQL_USERNAME", "john.newbie@world.com")
+password = os.getenv("GQL_PASSWORD", "john.newbie@world.com")
 
 class GraphQLUser(HttpUser):
     wait_time = between(1, 5)  # Wait time between requests (seconds)

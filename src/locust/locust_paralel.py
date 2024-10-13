@@ -3,7 +3,9 @@ from gevent.pool import Group
 import time
 import json
 import os
-from utils.auth import username, password
+
+username = os.getenv("GQL_USERNAME", "john.newbie@world.com")
+password = os.getenv("GQL_PASSWORD", "john.newbie@world.com")
 
 # Define the number of parallel requests
 num_of_parallel_requests = 6
@@ -45,6 +47,8 @@ class GraphQLUser(HttpUser):
         with open(self.response_file, "a", encoding="utf-8") as f:
             json.dump(response_data, f, indent=4, ensure_ascii=False)
             f.write("\n")
+
+
 
     @task
     def graphql_simple_query(self):
