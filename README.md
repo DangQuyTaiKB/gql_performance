@@ -5,6 +5,16 @@
 
 ## 3/10/2024: Test Locust
 - $locust -f test_5_locust.py
-- Web-based UI: http://localhost:8089
 
-## 6/10/2024: load test and stress test
+
+how locust --- problem contact gql enpint in parallel
+
+
+dont ---- block --- dont wait
+
+
+
+
+
+
+

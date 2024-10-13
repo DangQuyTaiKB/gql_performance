@@ -1,4 +1,39 @@
-﻿# Ignore Python cache files
+﻿# Ignore Python bytecode
 __pycache__/
 *.py[cod]
-*$py.class
+
+# Ignore log files
+*.log
+
+# Ignore temporary files
+*.tmp
+*.temp
+
+# Ignore build artifacts
+/build/
+
+# Ignore IDE specific files
+.idea/
+.vscode/
+
+# Ignore environment files
+.env
+
+# Ignore database files
+*.sqlite3
+
+# Ignore compiled Python files
+*.pyc
+
+# Ignore coverage reports
+htmlcov/
+.coverage
+
+# Ignore Locust test results
+locustfile.pyc
+locust_parallel.pyc
+other_locust_tests.pyc
+
+# Ignore OS generated files
+.DS_Store
+Thumbs.db

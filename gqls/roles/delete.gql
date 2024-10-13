@@ -1,7 +1,0 @@
-mutation roleDelete($id: UUID!) {
-  result: roleDelete(
-    id: $id
-  ) {
-    msg
-  }
-}

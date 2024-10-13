@@ -1,7 +1,11 @@
 ﻿fastapi
 uvicorn
-json
 pandas
 aiohttp
 aiofiles
 locust
+psycopg[binary]
+asyncpg
+sqlalchemy[asyncio]
+gevent
+concurrent

@@ -1,6 +1,0 @@
-
-mutation($id: UUID!) {
-  result: membershipDelete(id: $id) {
-    msg
-  }
-}

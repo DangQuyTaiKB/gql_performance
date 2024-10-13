@@ -1,0 +1,4 @@
+GQL_PROXY_1=http://apollo:3000/api/gql/
+GQL_PROXY=http://localhost:33001/api/gql/
+USERNAME="john.newbie@world.com"
+PASSWORD="john.newbie@world.com"

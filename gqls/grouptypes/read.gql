@@ -1,9 +1,0 @@
-query ($id: UUID!) {
-  result: groupTypeById(id: $id) {
-    __typename
-    id
-    lastchange
-    name
-    nameEn
-  }
-}

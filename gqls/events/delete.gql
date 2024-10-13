@@ -1,6 +1,0 @@
-
-mutation ($id: UUID!) {
-  result: eventDelete(id: $id) {
-    msg
-  }
-}        
