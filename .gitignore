@@ -1,6 +1,16 @@
-﻿/build/
+﻿# Ignore Python bytecode
+__pycache__/
+*.py[cod]
 
-/venv/
+# Ignore log files
+*.log
+
+# Ignore temporary files
+*.tmp
+*.temp
+
+# Ignore build artifacts
+/build/
 
 # Ignore IDE specific files
 .idea/
