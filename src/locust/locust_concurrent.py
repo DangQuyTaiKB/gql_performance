@@ -2,15 +2,15 @@
 import time
 import json
 import os
-# from utils.auth import username, password
-
+from query.userPage import queryStr_0
 username = os.getenv("GQL_USERNAME", "john.newbie@world.com")
 password = os.getenv("GQL_PASSWORD", "john.newbie@world.com")
+gqlurl = os.getenv("GQL_PROXY", "http://localhost:33001/api/gql")
+login_url = os.getenv("GQL_LOGIN", "http://localhost:33001/oauth/login3")
+response_file = "response.json"
 
 class GraphQLUser(HttpUser):
     wait_time = between(1, 5)  # Wait time between requests (seconds)
-    response_file = "response.json"
-
     def on_start(self):
         self.token = None
         self.token_expiry = 0
@@ -21,12 +21,11 @@ class GraphQLUser(HttpUser):
             os.remove(self.response_file)
 
     def get_token(self):
-        url = "http://localhost:33001/oauth/login3"
-        response = self.client.get(url)
+        response = self.client.get(login_url)
         keyJson = response.json()
 
         payload = {"key": keyJson["key"], "username": username, "password": password}
-        response = self.client.post(url, json=payload)
+        response = self.client.post(login_url, json=payload)
         tokenJson = response.json()
 
         # Save token and expiration time
@@ -46,15 +45,11 @@ class GraphQLUser(HttpUser):
             f.write("\n")
 
     @task
-    def graphql_simple_query(self):
-        """
-        This function performs a simple GraphQL query.
-        """
+    def graphql_locust(self):
+
+        query_string = queryStr_0
+
         self.ensure_valid_token()  # Check and refresh token if needed
-
-        gqlurl = "http://localhost:33001/api/gql"
-        query_string = "{userPage{id name surname email}}"  # Simple query
-
         payload = {"query": query_string, "variables": {}}
         cookies = {'authorization': self.token}
 

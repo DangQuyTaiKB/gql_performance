@@ -34,7 +34,7 @@ def print_dict(dict_all):
     
 
 
-async def load_test_1(q, token, num_requests, concurrent_limit, url):
+async def load_test_concurrent_1(q, token, num_requests, concurrent_limit, url):
     async def single_request(session):
         payload = {"query": q, "variables": {}}
         cookies = {'authorization': token}
@@ -72,7 +72,7 @@ async def load_test_1(q, token, num_requests, concurrent_limit, url):
     return dict_all
 
 
-async def load_test_2(q, token, requests_per_user, concurrent_limit, url):
+async def load_test_concurrent_2(q, token, requests_per_user, concurrent_limit, url):
  
     # Function to simulate a single request
     async def runTest():
@@ -115,7 +115,7 @@ async def load_test_2(q, token, requests_per_user, concurrent_limit, url):
     print_dict(dict_all)
     return dict_all
 
-async def parallel_load_test(url, payload, token, num_requests, num_workers):
+async def load_test_parallel(url, payload, token, num_requests, num_workers):
     async def send_request(session, url, payload, token):
         try:
             start_time = time.time()
@@ -134,7 +134,7 @@ async def parallel_load_test(url, payload, token, num_requests, num_workers):
             tasks = [send_request(session, url, payload, token) for _ in range(num_requests)]
             return await asyncio.gather(*tasks)
 
-    # Use ThreadPoolExecutor instead of ProcessPoolExecutor
+    # Use ThreadPoolExecutor
     with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
         loop = asyncio.get_event_loop()
         futures = [
@@ -155,3 +155,6 @@ async def parallel_load_test(url, payload, token, num_requests, num_workers):
     dict_all.update({"num_requests": num_requests})
     print_dict(dict_all)
     return dict_all
+
+
+

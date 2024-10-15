@@ -2,10 +2,10 @@
 import time
 import statistics
 import aiohttp
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
 
-# Concurrent stress test with optimized request handling
+# Concurrent stress test using asyncio
 async def stress_test_concurrent(q, token, url, initial_load, step_size, max_limit, recovery_steps):
     async def run_concurrent_load(current_load):
         semaphore = asyncio.Semaphore(current_load)
@@ -17,7 +17,7 @@ async def stress_test_concurrent(q, token, url, initial_load, step_size, max_lim
     current_load = initial_load
     all_results = []
 
-    # Increase load until the system fails
+    # Increase load until the system breaks
     while current_load <= max_limit:
         print(f"Testing with {current_load} concurrent requests...")
         responses = await run_concurrent_load(current_load)
@@ -65,16 +65,16 @@ async def stress_test_concurrent(q, token, url, initial_load, step_size, max_lim
     return all_results
 
 
-# Parallel stress test using ProcessPoolExecutor
+# Parallel stress test using ThreadPoolExecutor-multithreading
 def run_stress_load_sync(q, token, url, current_load):
     return asyncio.run(run_concurrent_load(q, token, url, current_load))
 
 
-async def enhanced_stress_test_parallel(q, token, url, initial_load, step_size, max_limit, recovery_steps):
+async def stress_test_parallel(q, token, url, initial_load, step_size, max_limit, recovery_steps):
     current_load = initial_load
     all_results = []
-
-    with ProcessPoolExecutor() as executor:
+    # Use ThreadPoolExecutor instead of ProcessPoolExecutor 
+    with ThreadPoolExecutor() as executor:
         while current_load <= max_limit:
             print(f"Testing with {current_load} concurrent requests (Parallel)...")
             loop = asyncio.get_event_loop()
