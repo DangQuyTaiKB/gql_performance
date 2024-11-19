@@ -3,18 +3,21 @@ from gevent.pool import Group
 import time
 import json
 import os
+import sys
+import os
+
+# Add the parent directory to the system path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from query.userPage import queryStr_0
 username = os.getenv("GQL_USERNAME", "john.newbie@world.com")
 password = os.getenv("GQL_PASSWORD", "john.newbie@world.com")
 gqlurl = os.getenv("GQL_PROXY", "http://localhost:33001/api/gql")
 login_url = os.getenv("GQL_LOGIN", "http://localhost:33001/oauth/login3")
-response_file = "response.json"
-
 num_of_parallel_requests = 6
 
 class GraphQLUser(HttpUser):
     wait_time = between(1, 5)  # Wait time between requests (seconds)
-    
+    response_file = "response.json"
     def on_start(self):
         self.token = None
         self.token_expiry = 0

@@ -1,6 +1,7 @@
 # Performance 2024
 
 ## 30/9/2024: First commit
+- venv\Scripts\activate
 - $uvicorn main:app --reload
 
 ## 3/10/2024: Test Locust

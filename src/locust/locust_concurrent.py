@@ -1,4 +1,4 @@
-﻿from locust import HttpUser, task, between
+﻿﻿from locust import HttpUser, task, between
 import time
 import json
 import os
