@@ -5,6 +5,8 @@ import time
 import statistics
 import concurrent.futures
 import os
+import psutil
+import random
 
 def dict_all_results(results, response_times, success_count, failure_count):
     avg_response_time = statistics.mean(response_times)
@@ -13,13 +15,14 @@ def dict_all_results(results, response_times, success_count, failure_count):
     median_response_time = statistics.median(response_times)
     return {
         "results": results,
-        "response_times": response_times,
         "avg_response_time": avg_response_time,
         "min_response_time": min_response_time,
         "max_response_time": max_response_time,
         "median_response_time": median_response_time,
+        "num_requests": len(results),
         "success_count": success_count,
-        "failure_count": failure_count
+        "failure_count": failure_count,
+        "response_times": response_times
     }
 
 def print_dict(dict_all):
@@ -36,7 +39,8 @@ def print_dict(dict_all):
 
 async def load_test_concurrent_1(q, token, num_requests, concurrent_limit, url):
     async def single_request(session):
-        payload = {"query": q, "variables": {}}
+        query = random.choice(list(q.values()))
+        payload = {"query": query, "variables": {}}
         cookies = {'authorization': token}
         
         start_time = time.time()
@@ -61,13 +65,17 @@ async def load_test_concurrent_1(q, token, num_requests, concurrent_limit, url):
 
     results = await run_requests()
     
+    # Track system metrics
+    cpu_usage = psutil.cpu_percent()
+    memory_usage = psutil.virtual_memory().percent
+
     # Calculate statistics
     success_count = sum(1 for r, _ in results if isinstance(r, dict) and 'data' in r)
     failure_count = num_requests - success_count
     
     response_times = [t for _, t in results]
     dict_all = dict_all_results(results, response_times, success_count, failure_count)
-    dict_all.update({"num_requests": num_requests})
+    dict_all.update({"cpu_usage": cpu_usage, "memory_usage": memory_usage})
     print_dict(dict_all)
     return dict_all
 
@@ -76,7 +84,8 @@ async def load_test_concurrent_2(q, token, requests_per_user, concurrent_limit, 
  
     # Function to simulate a single request
     async def runTest():
-        payload = {"query": q, "variables": {}}
+        query = random.choice(list(q.values()))
+        payload = {"query": query, "variables": {}}
         cookies = {'authorization': token}
         async with aiohttp.ClientSession() as session:
             try:
@@ -105,19 +114,26 @@ async def load_test_concurrent_2(q, token, requests_per_user, concurrent_limit, 
     # Start the load test and return the results
     results = await run_high_load_test()
     num_requests = len(results)
+    
+    # Track system metrics
+    cpu_usage = psutil.cpu_percent()
+    memory_usage = psutil.virtual_memory().percent
+
     # Calculate statistics
     success_count = sum(1 for status, _ in results if status == 200)
     failure_count = len(results) - success_count
 
     response_times = [t for _, t in results]
     dict_all = dict_all_results(results, response_times, success_count, failure_count)
-    dict_all.update({"num_requests": num_requests})
+    dict_all.update({"num_requests": num_requests, "cpu_usage": cpu_usage, "memory_usage": memory_usage})
     print_dict(dict_all)
     return dict_all
 
-async def load_test_parallel(url, payload, token, num_requests, num_workers):
-    async def send_request(session, url, payload, token):
+async def load_test_parallel(url, q, token, num_requests, num_workers):
+    async def send_request(session, url, q, token):
         try:
+            query = random.choice(list(q.values()))
+            payload = {"query": query, "variables": {}}
             start_time = time.time()
             cookies = {'authorization': token}
             async with session.post(url, json=payload, cookies=cookies) as response:
@@ -129,9 +145,9 @@ async def load_test_parallel(url, payload, token, num_requests, num_workers):
             print(f"Request error: {e}")
             return None, 0
 
-    async def run_requests(url, payload, token, num_requests):
+    async def run_requests(url, q, token, num_requests):
         async with aiohttp.ClientSession() as session:
-            tasks = [send_request(session, url, payload, token) for _ in range(num_requests)]
+            tasks = [send_request(session, url, q, token) for _ in range(num_requests)]
             return await asyncio.gather(*tasks)
 
     # Use ThreadPoolExecutor
@@ -140,7 +156,7 @@ async def load_test_parallel(url, payload, token, num_requests, num_workers):
         futures = [
             loop.run_in_executor(
                 executor, 
-                lambda: asyncio.run(run_requests(url, payload, token, num_requests // num_workers))
+                lambda: asyncio.run(run_requests(url, q, token, num_requests // num_workers))
             ) for _ in range(num_workers)
         ]
         results = await asyncio.gather(*futures)
@@ -148,11 +164,15 @@ async def load_test_parallel(url, payload, token, num_requests, num_workers):
     # Flatten the results
     flatten_results = [item for sublist in results for item in sublist]
     
+    # Track system metrics
+    cpu_usage = psutil.cpu_percent()
+    memory_usage = psutil.virtual_memory().percent
+
     success_count = sum(1 for status, _ in flatten_results if status == 200)
     failure_count = num_requests - success_count
     response_times = [t for _, t in flatten_results]
     dict_all = dict_all_results(flatten_results, response_times, success_count, failure_count)
-    dict_all.update({"num_requests": num_requests})
+    dict_all.update({"num_requests": num_requests, "cpu_usage": cpu_usage, "memory_usage": memory_usage})
     print_dict(dict_all)
     return dict_all
 

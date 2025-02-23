@@ -1,10 +1,6 @@
 ﻿import aiohttp
 
 async def getToken(username, password, login_url):
-
-    # keyurl = "http://host.docker.internal:33001/oauth/login3"
-    # keyurl = "http://localhost:33001/oauth/login3"
-
     async with aiohttp.ClientSession() as session:
         async with session.get(login_url) as resp:
             # print(resp.status)

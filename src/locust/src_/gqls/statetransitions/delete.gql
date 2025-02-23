@@ -1,9 +1,0 @@
-mutation statetransitionDelete(
-  $id: UUID!
-) {
-  result: statetransitionDelete(
-    id: $id) {
-    msg
-    statemachine { id }
-  }
-}

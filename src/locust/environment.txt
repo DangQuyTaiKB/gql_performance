@@ -1,4 +1,0 @@
-DEMO=True
-DEMODATA=True
-DEMOUSER={"id": "2d9dc5ca-a4a2-11ed-b9df-0242ac120003", "name": "John", "surname": "Newbie"}
-GQLUG_ENDPOINT_URL=http://localhost:33001/api/gql

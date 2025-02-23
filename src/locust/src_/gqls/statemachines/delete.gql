@@ -1,7 +1,0 @@
-mutation statemachineDelete($id: UUID!) {
-  result: statemachineDelete(
-    id: $id
-  ) {
-    msg
-  }
-}

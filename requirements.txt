@@ -10,3 +10,9 @@ psycopg[binary]
 
 sqlalchemy[asyncio]
 gevent
+
+matplotlib
+seaborn
+pyinstrument
+
+scalene
