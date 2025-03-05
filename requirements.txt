@@ -16,3 +16,4 @@ seaborn
 pyinstrument
 
 scalene
+tenacity
