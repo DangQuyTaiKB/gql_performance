@@ -1,5 +1,16 @@
 from locust import HttpUser, task, between
 import json
+import os
+
+gqlurl = os.getenv("GQL_PROXY", "http://frontend:8000/api/gql")
+login_url = os.getenv("GQL_LOGIN", "http://frontend:8000/oauth/login3")
+username = os.getenv("GQL_USERNAME", "john.newbie@world.com")
+password = os.getenv("GQL_PASSWORD", "john.newbie@world.com")
+
+print(gqlurl)
+print(login_url)
+print(username)
+print(password)
 
 def load_user_queries():
     with open('locust_queries.json', 'r') as f:
@@ -30,7 +41,7 @@ def create_query_task(query_name, variables=None, expected_result=None):
     return task_func
 
 class ApiAdminUser(HttpUser):
-    host = "http://frontend:33001"
+    host = gqlurl.replace("/api/gql", "")
     wait_time = between(1, 5)
 
     def on_start(self):

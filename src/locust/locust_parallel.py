@@ -1,6 +1,12 @@
 ﻿from locust import HttpUser, task, between
 from gevent.pool import Pool
 import json
+import os
+
+gqlurl = os.getenv("GQL_PROXY", "http://frontend:8000/api/gql")
+login_url = os.getenv("GQL_LOGIN", "http://frontend:8000/oauth/login3")
+username = os.getenv("GQL_USERNAME", "john.newbie@world.com")
+password = os.getenv("GQL_PASSWORD", "john.newbie@world.com")
 
 # Load user-provided queries from JSON file
 def load_user_queries():
