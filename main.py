@@ -18,10 +18,15 @@ q = {
 }
 app = FastAPI()
 
-gqlurl = os.getenv("GQL_PROXY", "http://localhost:33001/api/gql")
-login_url = os.getenv("GQL_LOGIN", "http://localhost:33001/oauth/login3")
+gqlurl = os.getenv("GQL_PROXY", "http://frontend:33001/api/gql")
+login_url = os.getenv("GQL_LOGIN", "http://frontend:33001/oauth/login3")
 username = os.getenv("GQL_USERNAME", "john.newbie@world.com")
 password = os.getenv("GQL_PASSWORD", "john.newbie@world.com")
+
+print(gqlurl)
+print(login_url)
+print(username)
+print(password)
 ############ Intro FastAPI ################
 @app.get("/")
 async def root():

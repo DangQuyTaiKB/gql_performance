@@ -30,7 +30,7 @@ def create_query_task(query_name, variables=None, expected_result=None):
     return task_func
 
 class ApiAdminUser(HttpUser):
-    host = "http://localhost:33001"
+    host = "http://frontend:33001"
     wait_time = between(1, 5)
 
     def on_start(self):

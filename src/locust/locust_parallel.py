@@ -35,7 +35,7 @@ class ApiAdminUser(HttpUser):
     """
     Locust user class để thực hiện các bài kiểm tra tải song song.
     """
-    host = "http://localhost:33001"  # Địa chỉ host của API
+    host = "http://frontend:33001"  # Địa chỉ host của API
     wait_time = between(1, 5)  # Thời gian chờ giữa các task
     parallel_pool_size = 100  # Số lượng task chạy song song
 
