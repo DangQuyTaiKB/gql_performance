@@ -95,7 +95,8 @@ async def load_test_concurrent_1(q, token, num_requests, concurrent_limit, url):
     logger.info(f"CPU Usage: {psutil.cpu_percent()}%")
     logger.info(f"Memory Usage: {psutil.virtual_memory().percent}%")
 
-    success_count = sum(1 for r, _ in results if isinstance(r, dict) and 'data' in r)
+    # success_count = sum(1 for r, _ in results if isinstance(r, dict) and 'data' in r)
+    success_count = sum(1 for status, _ in results if status == 200)
     failure_count = num_requests - success_count
     
     response_times = [t for _, t in results]
