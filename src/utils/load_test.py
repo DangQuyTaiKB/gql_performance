@@ -76,10 +76,12 @@ async def load_test_concurrent_1(q, token, num_requests, concurrent_limit, url):
         start_time = time.time()
         try:
             response, status, end_time = await make_retryable_request(session, url, query, token)
-            return response, (end_time - start_time)
+            return status, (end_time - start_time)
         except Exception as e:
             logger.error(f"Final failure: {str(e)}")
             return None, 0
+        
+       
 
     async def run_requests():
         connector = TCPConnector(limit=concurrent_limit)
