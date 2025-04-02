@@ -112,6 +112,7 @@ async def load_test_concurrent_1(q, token, num_requests, concurrent_limit, url):
 
     results = await run_requests()
 
+<<<<<<< HEAD
     # Tạo file kết quả
     with open("response_concurrent.json", "w") as f:
         json.dump(results, f)
@@ -121,6 +122,8 @@ async def load_test_concurrent_1(q, token, num_requests, concurrent_limit, url):
     logger.info(f"CPU Usage: {cpu_usage}%")
     logger.info(f"Memory Usage: {memory_usage}%")
 
+=======
+>>>>>>> 74f76f195810a1343722b7c82621d3443b1e182f
     success_count = sum(1 for status, _ in results if status == 200)
     failure_count = num_requests - success_count
     response_times = [t for _, t in results if t > 0]
