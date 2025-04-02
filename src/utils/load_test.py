@@ -113,9 +113,9 @@ async def load_test_concurrent_1(q, token, num_requests, concurrent_limit, url):
     results = await run_requests()
 
 <<<<<<< HEAD
-    # Tạo file kết quả
-    with open("response_concurrent.json", "w") as f:
-        json.dump(results, f)
+    # # Tạo file kết quả
+    # with open("response_concurrent.json", "w") as f:
+    #     json.dump(results, f)
 
     cpu_usage = psutil.cpu_percent()
     memory_usage = psutil.virtual_memory().percent
