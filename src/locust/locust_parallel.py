@@ -5,8 +5,15 @@ import os
 
 gqlurl = os.getenv("GQL_PROXY", "http://frontend:8000/api/gql")
 login_url = os.getenv("GQL_LOGIN", "http://frontend:8000/oauth/login3")
+# gqlurl = os.getenv("GQL_PROXY", "http://localhost:33001/api/gql")
+# login_url = os.getenv("GQL_LOGIN", "http://localhost:33001/oauth/login3")
 username = os.getenv("GQL_USERNAME", "john.newbie@world.com")
 password = os.getenv("GQL_PASSWORD", "john.newbie@world.com")
+
+print(gqlurl)
+print(login_url)
+print(username)
+print(password)
 
 # Load user-provided queries from JSON file
 def load_user_queries():
@@ -38,11 +45,8 @@ def create_query_task(query_name, variables=None, expected_result=None):
     return task_func
 
 class ApiAdminUser(HttpUser):
-    """
-    Locust user class để thực hiện các bài kiểm tra tải song song.
-    """
-    host = "http://frontend:33001"  # Địa chỉ host của API
-    wait_time = between(1, 5)  # Thời gian chờ giữa các task
+    host = gqlurl.replace("/api/gql", "")
+    wait_time = between(1, 5)
     parallel_pool_size = 100  # Số lượng task chạy song song
 
     def on_start(self):

@@ -1,39 +1,27 @@
-﻿# Ignore Python bytecode
+﻿# Byte-compiled files
 __pycache__/
 *.py[cod]
 
-# Ignore log files
-*.log
-
-# Ignore temporary files
-*.tmp
-*.temp
-
-# Ignore build artifacts
-/build/
-
-# Ignore IDE specific files
-.idea/
-.vscode/
-
-# Ignore environment files
+# Virtual environment
+venv/
 .env
 
-# Ignore database files
-*.sqlite3
+# Logs
+*.log
 
-# Ignore compiled Python files
-*.pyc
 
-# Ignore coverage reports
+# Test coverage
 htmlcov/
 .coverage
 
-# Ignore Locust test results
-locustfile.pyc
-locust_parallel.pyc
-other_locust_tests.pyc
+# Profiling data
+*.prof
 
-# Ignore OS generated files
-.DS_Store
-Thumbs.db
+# IDE settings
+.vscode/
+.idea/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/

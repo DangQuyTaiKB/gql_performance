@@ -7,19 +7,23 @@ from src.utils.load_test import load_test_concurrent_1, load_test_parallel
 from src.utils.stress_test import stress_test_concurrent
 import subprocess
 import psutil
-from pyinstrument import Profiler
+# from pyinstrument import Profiler
 
 q = {
 "q0" : "{result: userPage(limit: 100) {id email name surname}}", 
 "q1" : "{result: userPage(limit: 100) {id email name }}", 
 "q2" : "{result: userPage(limit: 100) {id email}}", 
 "q3" : "{result: userPage(limit: 100) {id}}", 
-"q4" : "{result: userPage(limit: 1000) {id email name}}"
+"q4" : "{result: userPage(limit: 1000) {id email name}}",
+"q5" : "{userPage{id email}}"
 }
 app = FastAPI()
 
 gqlurl = os.getenv("GQL_PROXY", "http://frontend:8000/api/gql")
 login_url = os.getenv("GQL_LOGIN", "http://frontend:8000/oauth/login3")
+
+# gqlurl = os.getenv("GQL_PROXY", "http://localhost:33001/api/gql")
+# login_url = os.getenv("GQL_LOGIN", "http://localhost:33001/oauth/login3")
 username = os.getenv("GQL_USERNAME", "john.newbie@world.com")
 password = os.getenv("GQL_PASSWORD", "john.newbie@world.com")
 
@@ -103,6 +107,10 @@ async def stress_test_concurrent_endpoint(request: Request):
 # ---------------------- Locust Endpoints ----------------------
 @app.post("/locust_concurrent")
 async def run_locust_concurrent_test(request: Request):
+
+    description = "Locust is an open source performance/load testing tool for HTTP and other protocols. " \
+    "Its developer-friendly approach lets you define your tests in regular Python code."
+
     body = await request.json()
     query = body.get('query', {})
     try:
@@ -134,13 +142,15 @@ async def run_locust_concurrent_test(request: Request):
         #     "status": "success",
         #     "report_url": "http://localhost:8089",
         # }
-        return {"query": query, "results": results}
+        return {"query": query, "results": results, "description": description}
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 @app.post("/locust_parallel")
 async def run_locust_parallel_test(request: Request):
+    description = "Locust is an open source performance/load testing tool for HTTP and other protocols. " \
+    "Its developer-friendly approach lets you define your tests in regular Python code."
     body = await request.json()
     query = body.get('query', {})
     try:
@@ -174,7 +184,7 @@ async def run_locust_parallel_test(request: Request):
             "report_url": "http://localhost:8089",
         }
 
-        return {"query": query, "results": results}
+        return {"query": query, "results": results, "description": description}
 
     except Exception as e:
         return {"status": "error", "message": str(e)}

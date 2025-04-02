@@ -1,0 +1,1 @@
+{"q0": "{userPage{id email}}", "q1": "{result: userPage(limit: 100) {id email name surname}}"}
