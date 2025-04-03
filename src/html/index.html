@@ -47,13 +47,13 @@
     
     <div class="container mt-5">
         <div class="button-container d-flex flex-wrap">
-            <button class="btn btn-outline-light" onclick="showInputs('load_test_concurrent_1')">
-                Concurrent User Test
+            <button class="btn btn-outline-light" onclick="showInputs('load_test_1')">
+                Burst Load Test
             </button>
-            <button class="btn btn-outline-light" onclick="showInputs('parallel_load_test')">
-                Parallel Load Test
+            <button class="btn btn-outline-light" onclick="showInputs('load_test_heavy')">
+                Sustained Heavy Load Test
             </button>
-            <button class="btn btn-outline-light" onclick="showInputs('stress_test_concurrent')">
+            <button class="btn btn-outline-light" onclick="showInputs('stress_test')">
                 Stress Test
             </button>
             <button class="btn btn-outline-light" onclick="showInputs('locust_concurrent')">
@@ -110,7 +110,7 @@
             selectedEndpoint = testType;
             currentTestType = testType.includes('stress') ? 'stress' : 'load';
             const inputHTML = {
-                'load_test_concurrent_1': `
+                'load_test_1': `
                     <div class="input-container">
                         <h4>CONCURRENT USER TEST</h4>
                         <label>Requests:</label>
@@ -120,9 +120,9 @@
                         ${querySection()}
                     </div>
                 `,
-                'parallel_load_test': `
+                'load_test_heavy': `
                     <div class="input-container">
-                        <h4>PARALLEL LOAD TEST</h4>
+                        <h4>HEAVY LOAD TEST</h4>
                         <label>Total Requests:</label>
                         <input type="number" class="form-control" value="100" id="num_requests">
                         <label>Workers:</label>
@@ -130,7 +130,7 @@
                         ${querySection()}
                     </div>
                 `,
-                'stress_test_concurrent': `
+                'stress_test': `
                     <div class="input-container">
                         <h4>STRESS TEST</h4>
                         <label>Initial Load:</label>
@@ -313,7 +313,7 @@
             const logElement = document.getElementById('log-content');
             logElement.scrollTop = logElement.scrollHeight;
         }
-        window.onload = () => showInputs('load_test_concurrent_1');
+        window.onload = () => showInputs('load_test_1');
     </script>
 </body>
 </html>

@@ -3,7 +3,8 @@ from fastapi.responses import HTMLResponse
 import json
 import os
 from src.utils.getToken import getToken
-from src.utils.load_test import load_test_concurrent_1, load_test_parallel
+from src.utils.load_test import load_test
+from src.utils.load_test_heavy import load_test_heavy
 from src.utils.stress_test import stress_test_concurrent
 import subprocess
 import psutil
@@ -40,12 +41,10 @@ def outfile(data, filename):
     with open(filename + '.json', 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
 ############ FastAPI ################
-@app.post("/load_test_concurrent_1")
+@app.post("/load_test_1")
 async def loadTest1(request: Request):
     description = """
-    • This test simulates multiple requests being sent simultaneously by several users but limited by a defined concurrent_limit.
-    • Purpose: To measure the system's performance under a large number of concurrent requests.
-    • Real-world example: An e-commerce website receiving multiple requests from users browsing product pages.
+    Scenario: "Burst Load (Simulating DDoS Attack)"
     """
     body = await request.json()
     num_requests = int(body.get('num_requests', 100))
@@ -54,18 +53,16 @@ async def loadTest1(request: Request):
     query = body.get('query', q)  # Use the dictionary of queries
     print(query)
 
-    results = await load_test_concurrent_1(query, token, num_requests, concurrent_limit, gqlurl)
+    results = await load_test(query, token, num_requests, concurrent_limit, gqlurl)
     outfile(results['results'], 'response')
     time_result = {key: value for key, value in results.items() if key != "results"}
 
     return {"description": description, "query": query, "results": time_result}
 
-@app.post("/parallel_load_test")
-async def parallelLoadTest(request: Request):
+@app.post("/load_test_heavy")
+async def heavyLoadTest_endpoint(request: Request):
     description = """
-    • This test uses multiple workers to send requests in parallel.
-    • Purpose: To test the system's performance with parallel request handling.
-    • Real-world example: A backend service handling requests from multiple microservices.
+    Scenario: "Sustained Heavy Load"
     """
     body = await request.json()
     num_requests = int(body.get('num_requests', 100))
@@ -75,13 +72,13 @@ async def parallelLoadTest(request: Request):
     print(query)
     payload = {"query": query, "variables": {}}
 
-    results = await load_test_parallel(gqlurl, payload, token, num_requests, num_workers)
+    results = await load_test_heavy(gqlurl, payload, token, num_requests, num_workers)
     time_result = {key: value for key, value in results.items() if key != "results"}
     time_result.update({"num_workers": num_workers})
     return {"description": description, "query": query, "results": time_result}
 
-@app.post("/stress_test_concurrent")
-async def stress_test_concurrent_endpoint(request: Request):
+@app.post("/stress_test")
+async def stress_test_endpoint(request: Request):
     description = """
     • Gradually increasing load to test system limits.
     • Purpose: To identify the maximum load the system can handle before failure.

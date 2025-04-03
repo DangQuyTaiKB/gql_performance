@@ -75,7 +75,7 @@ def print_dict(dict_all):
     print(f"Maximum Response Time: {dict_all['max_response_time']:.3f} seconds")
     print(f"Median Response Time: {dict_all['median_response_time']:.3f} seconds")
 
-async def load_test_concurrent_1(q, token, num_requests, concurrent_limit, url):
+async def load_test(q, token, num_requests, concurrent_limit, url):
     async def single_request(session):
         query = random.choice(list(q.values()))
         payload = {"query": query, "variables": {}}
@@ -113,9 +113,11 @@ async def load_test_concurrent_1(q, token, num_requests, concurrent_limit, url):
     results = await run_requests()
 
 
-    # # Tạo file kết quả
-    # with open("response_concurrent.json", "w") as f:
-    #     json.dump(results, f)
+
+
+    # Tạo file kết quả
+    with open("response_concurrent.json", "w") as f:
+        json.dump(results, f)
 
     cpu_usage = psutil.cpu_percent()
     memory_usage = psutil.virtual_memory().percent
@@ -126,76 +128,10 @@ async def load_test_concurrent_1(q, token, num_requests, concurrent_limit, url):
     failure_count = num_requests - success_count
     response_times = [t for _, t in results if t > 0]
 
+    # print(response_times)
+
     dict_all = dict_all_results(results, response_times, success_count, failure_count)
     dict_all.update({
-        "cpu_usage": cpu_usage,
-        "memory_usage": memory_usage
-    })
-    print_dict(dict_all)
-    return dict_all
-
-async def load_test_parallel(url, q, token, num_requests, num_workers):
-    async def send_request(session, url, q, token):
-        query = random.choice(list(q.values()))
-        payload = {"query": query, "variables": {}}
-        cookies = {'authorization': token}
-        start_time = time.time()
-
-        try:
-            async with session.post(
-                url,
-                json=payload,
-                cookies=cookies,
-                timeout=aiohttp.ClientTimeout(total=30)
-            ) as resp:
-                response_json = await resp.json()
-                end_time = time.time()
-
-                # Ghi log kết quả thành công
-                logger.info(f"Request successful: {resp.status}, Query: {query}")
-                # Ghi kết quả vào file
-                # with open("response_retryable.json", "w") as f:
-                #     json.dump(response_json, f)
-
-                return resp.status, (end_time - start_time)
-        except Exception as e:
-            # Ghi log lỗi
-            logger.error(f"Request failed: {str(e)}")
-            return None, 0
-
-    async def run_requests(url, q, token, num_requests):
-        async with aiohttp.ClientSession() as session:
-            tasks = [send_request(session, url, q, token) for _ in range(num_requests)]
-            return await asyncio.gather(*tasks)
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
-        loop = asyncio.get_event_loop()
-        futures = [
-            loop.run_in_executor(
-                executor, 
-                lambda: asyncio.run(run_requests(url, q, token, num_requests // num_workers))
-            )
-            for _ in range(num_workers)
-        ]
-        results = await asyncio.gather(*futures)
-
-    flatten_results = [item for sublist in results for item in sublist]
-    # Tạo file kết quả
-    with open("response_flatten_results.json", "w") as f:
-        json.dump(flatten_results, f)
-
-    cpu_usage = psutil.cpu_percent()
-    memory_usage = psutil.virtual_memory().percent
-    logger.info(f"CPU Usage: {cpu_usage}%")
-    logger.info(f"Memory Usage: {memory_usage}%")
-
-    success_count = sum(1 for status, _ in flatten_results if status == 200)
-    failure_count = num_requests - success_count
-    response_times = [t for _, t in flatten_results if t > 0]
-
-    dict_all = dict_all_results(flatten_results, response_times, success_count, failure_count)
-    dict_all.update({
-        "num_requests": num_requests,
         "cpu_usage": cpu_usage,
         "memory_usage": memory_usage
     })
