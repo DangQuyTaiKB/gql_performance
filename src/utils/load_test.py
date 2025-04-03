@@ -47,7 +47,7 @@ async def load_test(q, token, num_requests, concurrent_limit, url):
         except Exception as e:
             # Ghi log lỗi
             logger.error(f"Request failed: {str(e)}")
-            return resp.status, (end_time - start_time)
+            return resp.status, (time.time() - start_time)
 
     async def run_requests():
         connector = TCPConnector(limit=concurrent_limit)
