@@ -47,11 +47,11 @@
     
     <div class="container mt-5">
         <div class="button-container d-flex flex-wrap">
+            <button class="btn btn-outline-light" onclick="showInputs('sample_test')">
+                Sample Test
+            </button>
             <button class="btn btn-outline-light" onclick="showInputs('load_test_1')">
                 Burst Load Test
-            </button>
-            <button class="btn btn-outline-light" onclick="showInputs('load_test_heavy')">
-                Sustained Heavy Load Test
             </button>
             <button class="btn btn-outline-light" onclick="showInputs('stress_test')">
                 Stress Test
@@ -71,6 +71,13 @@
                     <strong>Test Results:</strong>
                     <div class="description-container mt-2" id="description"></div>
                     <pre class="mt-3 p-3 bg-light rounded" id="result-text">Select a test to begin...</pre>
+                    <pre class="mt-3 p-3 bg-light rounded" id="result-text">
+Sample query: 
+q = {
+    "q0": "{result: userPage(limit: 100) {id email name surname}}",
+    "q1": "{userPage {id email}}"
+}
+</pre>
                     <div id="report-links"></div>
                 </div>
             </div>
@@ -120,13 +127,9 @@
                         ${querySection()}
                     </div>
                 `,
-                'load_test_heavy': `
+                'sample_test': `
                     <div class="input-container">
-                        <h4>HEAVY LOAD TEST</h4>
-                        <label>Total Requests:</label>
-                        <input type="number" class="form-control" value="100" id="num_requests">
-                        <label>Workers:</label>
-                        <input type="number" class="form-control" value="5" id="num_workers">
+                        <h4>SAMPLE TEST</h4>
                         ${querySection()}
                     </div>
                 `,

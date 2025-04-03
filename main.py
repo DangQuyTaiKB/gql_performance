@@ -4,27 +4,18 @@ import json
 import os
 from src.utils.getToken import getToken
 from src.utils.load_test import load_test
-from src.utils.load_test_heavy import load_test_heavy
+from src.utils.sample_test import sample_test
 from src.utils.stress_test import stress_test_concurrent
 import subprocess
 import psutil
-# from pyinstrument import Profiler
 
-q = {
-"q0" : "{result: userPage(limit: 100) {id email name surname}}", 
-"q1" : "{result: userPage(limit: 100) {id email name }}", 
-"q2" : "{result: userPage(limit: 100) {id email}}", 
-"q3" : "{result: userPage(limit: 100) {id}}", 
-"q4" : "{result: userPage(limit: 1000) {id email name}}",
-"q5" : "{userPage{id email}}"
-}
 app = FastAPI()
 
-# gqlurl = os.getenv("GQL_PROXY", "http://frontend:8000/api/gql")
-# login_url = os.getenv("GQL_LOGIN", "http://frontend:8000/oauth/login3")
+gqlurl = os.getenv("GQL_PROXY", "http://frontend:8000/api/gql")
+login_url = os.getenv("GQL_LOGIN", "http://frontend:8000/oauth/login3")
 
-gqlurl = os.getenv("GQL_PROXY", "http://localhost:33001/api/gql")
-login_url = os.getenv("GQL_LOGIN", "http://localhost:33001/oauth/login3")
+# gqlurl = os.getenv("GQL_PROXY", "http://localhost:33001/api/gql")
+# login_url = os.getenv("GQL_LOGIN", "http://localhost:33001/oauth/login3")
 username = os.getenv("GQL_USERNAME", "john.newbie@world.com")
 password = os.getenv("GQL_PASSWORD", "john.newbie@world.com")
 
@@ -59,23 +50,29 @@ async def loadTest1(request: Request):
 
     return {"description": description, "query": query, "results": time_result}
 
-@app.post("/load_test_heavy")
-async def heavyLoadTest_endpoint(request: Request):
+@app.post("/sample_test")
+async def sampleTest_endpoint(request: Request):
     description = """
-    Scenario: "Sustained Heavy Load"
+    Sample query test
     """
     body = await request.json()
-    num_requests = int(body.get('num_requests', 100))
-    num_workers = int(body.get('num_workers', 5))
     token = await getToken(username, password, login_url)
     query = body.get('query', q)  # Use the dictionary of queries
     print(query)
-    payload = {"query": query, "variables": {}}
 
-    results = await load_test_heavy(gqlurl, payload, token, num_requests, num_workers)
-    time_result = {key: value for key, value in results.items() if key != "results"}
-    time_result.update({"num_workers": num_workers})
-    return {"description": description, "query": query, "results": time_result}
+    results = []
+    for query_name, query_content in query.items():
+        result = await sample_test(query_content, token, gqlurl)
+        results.append({
+            "query_name": query_name,
+            "status": result["status"],
+            "response_time": result["response_time"],
+            "response_body": result["response_body"]
+        })
+
+    return {"description": description, "query": query, "results": results}
+
+
 
 @app.post("/stress_test")
 async def stress_test_endpoint(request: Request):

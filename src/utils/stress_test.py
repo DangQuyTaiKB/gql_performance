@@ -5,7 +5,6 @@ import aiohttp
 import psutil
 import random
 import logging
-from concurrent.futures import ThreadPoolExecutor
 
 # Tạo logger riêng cho stress_test
 logger = logging.getLogger("stress_test")
@@ -15,32 +14,6 @@ logger.setLevel(logging.INFO)
 file_handler = logging.FileHandler("stress_test.log")
 file_handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s'))
 logger.addHandler(file_handler)
-
-
-async def enhanced_request(session, url, query, token):
-    """Make request with retry and timeout handling"""
-    payload = {"query": query, "variables": {}}
-    cookies = {'authorization': token}
-
-    attempt = 1  # Biến đếm số lần thử
-    while attempt <= 3:
-        try:
-            async with session.post(
-                    url,
-                    json=payload,
-                    cookies=cookies,
-                    timeout=aiohttp.ClientTimeout(total=30)
-            ) as resp:
-                logger.info(f"Attempt {attempt}: Success [{resp.status}]")
-                return resp.status, time.time()
-        except Exception as e:
-            logger.warning(f"Attempt {attempt}: Failed - {str(e)}")
-            attempt += 1
-            await asyncio.sleep(2 ** attempt)  # Backoff delay
-
-    logger.error(f"Request failed after 3 attempts")
-    return None, 0
-
 
 async def stress_test_concurrent(q, token, url, initial_load, step_size, max_limit, recovery_steps):
     """Concurrent stress test with performance monitoring"""
@@ -109,6 +82,31 @@ async def stress_test_concurrent(q, token, url, initial_load, step_size, max_lim
 
     return all_results
 
+async def enhanced_request(session, url, query, token):
+    """Make request with retry and timeout handling"""
+    payload = {"query": query, "variables": {}}
+    cookies = {'authorization': token}
+
+    attempt = 1  # Biến đếm số lần thử
+    while attempt <= 3:
+        try:
+            async with session.post(
+                    url,
+                    json=payload,
+                    cookies=cookies,
+                    timeout=aiohttp.ClientTimeout(total=30)
+            ) as resp:
+                logger.info(f"Attempt {attempt}: Success [{resp.status}]")
+                return resp.status, time.time()
+        except Exception as e:
+            logger.warning(f"Attempt {attempt}: Failed - {str(e)}")
+            attempt += 1
+            await asyncio.sleep(2 ** attempt)  # Backoff delay
+
+    logger.error(f"Request failed after 3 attempts")
+    return None, 0
+
+
 
 async def make_request(session, q, token, url):
     """Wrapper for enhanced request"""
@@ -120,24 +118,3 @@ async def make_request(session, q, token, url):
     except Exception as e:
         logger.error(f"Request failed: {str(e)}")
         return None, 0
-
-
-async def run_concurrent_load(q, token, url, current_load):
-    semaphore = asyncio.Semaphore(current_load)
-    async with aiohttp.ClientSession() as session:
-        tasks = [make_request(session, q, token, url) for _ in range(current_load)]
-        return await asyncio.gather(*tasks)
-
-
-# Function to save results to CSV
-def save_results_to_csv(results, filename="stress_test_results.csv"):
-    keys = results[0].keys() if results else []
-    with open(filename, mode='w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=keys)
-        writer.writeheader()
-        writer.writerows(results)
-
-
-# Example to run the stress test
-# results = await stress_test_concurrent(query_data, token, url, 10, 5, 100, 5)
-# save_results_to_csv(results)
