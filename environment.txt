@@ -1,5 +1,5 @@
 GQL_PROXY_1=http://apollo:3000/api/gql/
-GQL_PROXY=http://localhost:33001/api/gql/
-GQL_LOGIN=http://localhost:33001/oauth/login3
+GQL_PROXY=http://frontend:8000/api/gql/
+GQL_LOGIN=http://frontend:8000/oauth/login3
 USERNAME="john.newbie@world.com"
 PASSWORD="john.newbie@world.com"

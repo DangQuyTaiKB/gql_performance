@@ -23,6 +23,11 @@ print(gqlurl)
 print(login_url)
 print(username)
 print(password)
+
+q = {
+"q0": "{result: userPage(limit: 100) {id email name surname}}",
+"q1": "{userPage {id email}}"
+}
 ############ Intro FastAPI ################
 @app.get("/")
 async def root():
@@ -55,10 +60,6 @@ async def sampleTest_endpoint(request: Request):
     description = """
     Sample query test
     """
-    q = {
-    "q0": "{result: userPage(limit: 100) {id email name surname}}",
-    "q1": "{userPage {id email}}"
-    }
     body = await request.json()
     token = await getToken(username, password, login_url)
     query = body.get('query', q)  # Use the dictionary of queries
