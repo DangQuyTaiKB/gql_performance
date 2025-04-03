@@ -57,7 +57,7 @@ class ApiAdminUser(HttpUser):
             'password': (None, "john.newbie@world.com"),
             "key": (None, key_response.get("key", None))
         }
-        self.client.post("/oauth/login2", files=files)
+        # self.client.post("/oauth/login2", files=files)
 
     @task
     def graphql_parallel_test(self):

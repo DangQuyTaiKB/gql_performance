@@ -8,7 +8,6 @@ import os
 import psutil
 import random
 import logging
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 import json
 
 
@@ -20,60 +19,6 @@ logger.setLevel(logging.INFO)
 file_handler = logging.FileHandler("load_test.log")
 file_handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s'))
 logger.addHandler(file_handler)
-
-
-@retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=2, max=10),
-    retry=retry_if_exception_type((aiohttp.ClientError, asyncio.TimeoutError))
-)
-async def make_retryable_request(session, url, query, token):
-    """Xử lý request với retry và timeout"""
-    payload = {"query": query, "variables": {}}
-    cookies = {'authorization': token}
-    
-    try:
-        async with session.post(
-            url,
-            json=payload,
-            cookies=cookies,
-            timeout=aiohttp.ClientTimeout(total=30)
-        ) as resp:
-            #  response retryable.josn
-            with open("response_retryable.json", "w") as f:
-                json.dump(await resp.json(), f)
-
-            return await resp.json(), resp.status, time.time()
-    except Exception as e:
-        logger.error(f"Request error: {str(e)}")
-        raise
-
-def dict_all_results(results, response_times, success_count, failure_count):
-    avg_response_time = statistics.mean(response_times)
-    min_response_time = min(response_times)
-    max_response_time = max(response_times)
-    median_response_time = statistics.median(response_times)
-    return {
-        "results": results,
-        "avg_response_time": avg_response_time,
-        "min_response_time": min_response_time,
-        "max_response_time": max_response_time,
-        "median_response_time": median_response_time,
-        "num_requests": len(results),
-        "success_count": success_count,
-        "failure_count": failure_count,
-        "response_times": response_times
-    }
-
-def print_dict(dict_all):
-    print(f"Total Requests: {dict_all['num_requests']}")
-    print(f"Successful Requests: {dict_all['success_count']}")
-    print(f"Failed Requests: {dict_all['failure_count']}")
-    print(f"Success Rate: {dict_all['success_count']/dict_all['num_requests']*100:.2f}%")
-    print(f"Average Response Time: {dict_all['avg_response_time']:.3f} seconds")
-    print(f"Minimum Response Time: {dict_all['min_response_time']:.3f} seconds")
-    print(f"Maximum Response Time: {dict_all['max_response_time']:.3f} seconds")
-    print(f"Median Response Time: {dict_all['median_response_time']:.3f} seconds")
 
 async def load_test(q, token, num_requests, concurrent_limit, url):
     async def single_request(session):
@@ -102,7 +47,7 @@ async def load_test(q, token, num_requests, concurrent_limit, url):
         except Exception as e:
             # Ghi log lỗi
             logger.error(f"Request failed: {str(e)}")
-            return None, 0
+            return resp.status, (end_time - start_time)
 
     async def run_requests():
         connector = TCPConnector(limit=concurrent_limit)
@@ -111,9 +56,6 @@ async def load_test(q, token, num_requests, concurrent_limit, url):
             return await asyncio.gather(*tasks)
 
     results = await run_requests()
-
-
-
 
     # Tạo file kết quả
     with open("response_concurrent.json", "w") as f:
@@ -129,11 +71,33 @@ async def load_test(q, token, num_requests, concurrent_limit, url):
     response_times = [t for _, t in results if t > 0]
 
     # print(response_times)
+    avg_response_time = statistics.mean(response_times)
+    min_response_time = min(response_times)
+    max_response_time = max(response_times)
+    median_response_time = statistics.median(response_times)
 
-    dict_all = dict_all_results(results, response_times, success_count, failure_count)
-    dict_all.update({
+
+    dict_all = {
+        "results": results,
+        "avg_response_time": avg_response_time,
+        "min_response_time": min_response_time,
+        "max_response_time": max_response_time,
+        "median_response_time": median_response_time,
+        "num_requests": len(results),
+        "success_count": success_count,
+        "failure_count": failure_count,
+        "response_times": response_times,
         "cpu_usage": cpu_usage,
         "memory_usage": memory_usage
-    })
-    print_dict(dict_all)
+    }
+    
+
+    print(f"Total Requests: {dict_all['num_requests']}")
+    print(f"Successful Requests: {dict_all['success_count']}")
+    print(f"Failed Requests: {dict_all['failure_count']}")
+    print(f"Success Rate: {dict_all['success_count']/dict_all['num_requests']*100:.2f}%")
+    print(f"Average Response Time: {dict_all['avg_response_time']:.3f} seconds")
+    print(f"Minimum Response Time: {dict_all['min_response_time']:.3f} seconds")
+    print(f"Maximum Response Time: {dict_all['max_response_time']:.3f} seconds")
+    print(f"Median Response Time: {dict_all['median_response_time']:.3f} seconds")
     return dict_all

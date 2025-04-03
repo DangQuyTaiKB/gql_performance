@@ -5,5 +5,4 @@ aiohttp
 locust
 sqlalchemy[asyncio]
 gevent
-tenacity
 python-dotenv

@@ -6,7 +6,6 @@ import psutil
 import random
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 # Tạo logger riêng cho stress_test
 logger = logging.getLogger("stress_test")
@@ -18,11 +17,6 @@ file_handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(messa
 logger.addHandler(file_handler)
 
 
-@retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=2, max=10),
-    retry=retry_if_exception_type((aiohttp.ClientError, asyncio.TimeoutError))
-)
 async def enhanced_request(session, url, query, token):
     """Make request with retry and timeout handling"""
     payload = {"query": query, "variables": {}}

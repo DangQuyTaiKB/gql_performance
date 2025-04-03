@@ -56,7 +56,7 @@ class ApiAdminUser(HttpUser):
             'password': (None, "john.newbie@world.com"),
             "key": (None, key_response.get("key", None))
         }
-        self.client.post("/oauth/login2", files=files)
+        # self.client.post("/oauth/login2", files=files)
 
     # Dynamically add tasks based on user-provided queries
     for query_name in user_queries.keys():

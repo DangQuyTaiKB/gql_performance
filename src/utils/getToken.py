@@ -15,4 +15,3 @@ async def getToken(username, password, login_url):
             # print(tokenJson)
     return tokenJson.get("token", None)
 
-
