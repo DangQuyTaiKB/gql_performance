@@ -26,28 +26,23 @@ async def load_test(q, token, num_requests, concurrent_limit, url):
         payload = {"query": query, "variables": {}}
         cookies = {'authorization': token}
         start_time = time.time()
+  
+        async with session.post(
+            url,
+            json=payload,
+            cookies=cookies,
+            timeout=aiohttp.ClientTimeout(total=30)
+        ) as resp:
+            response_json = await resp.json()
+            end_time = time.time()
 
-        try:
-            async with session.post(
-                url,
-                json=payload,
-                cookies=cookies,
-                timeout=aiohttp.ClientTimeout(total=30)
-            ) as resp:
-                response_json = await resp.json()
-                end_time = time.time()
+            # Ghi log kết quả thành công
+            logger.info(f"Request status: {resp.status}, Query: {query}")
+            # # Ghi kết quả vào file
+            # with open("response_retryable.json", "w") as f:
+            #     json.dump(response_json, f)
 
-                # Ghi log kết quả thành công
-                logger.info(f"Request successful: {resp.status}, Query: {query}")
-                # # Ghi kết quả vào file
-                # with open("response_retryable.json", "w") as f:
-                #     json.dump(response_json, f)
-
-                return resp.status, (end_time - start_time)
-        except Exception as e:
-            # Ghi log lỗi
-            logger.error(f"Request failed: {str(e)}")
-            return resp.status, (time.time() - start_time)
+            return resp.status, (end_time - start_time)
 
     async def run_requests():
         connector = TCPConnector(limit=concurrent_limit)
