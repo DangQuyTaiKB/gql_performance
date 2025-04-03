@@ -14,27 +14,29 @@ async def sample_test(query, token, gqlurl):
     payload = {"query": query, "variables": {}}
     cookies = {'authorization': token}
     start_time = time.time()
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            gqlurl,
+            json=payload,
+            cookies=cookies,
+            timeout=aiohttp.ClientTimeout(total=30)
+        ) as resp:
+            response_time = time.time() - start_time
+            response_json = await resp.json()
+            logger.info(f"Query executed successfully: {query}")
 
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                gqlurl,
-                json=payload,
-                cookies=cookies,
-                timeout=aiohttp.ClientTimeout(total=30)
-            ) as resp:
-                response_time = time.time() - start_time
-                response_json = await resp.json()
-                logger.info(f"Query executed successfully: {query}")
+            logger.info(f"Response status: {resp.status}, Response time: {response_time:.2f} seconds")
+
+            if resp.status != 200:
+                logger.error(f"Error: {response_json.get('errors', 'No errors found')}")
                 return {
                     "status": resp.status,
                     "response_time": response_time,
+                    "error": response_json.get('errors', 'No errors found'),
                     "response_body": response_json
                 }
-    except Exception as e:
-        logger.error(f"Query execution failed: {str(e)}")
-        return {
-            "status": None,
-            "response_time": None,
-            "error": str(e)
-        }
+            return {
+                "status": resp.status,
+                "response_time": response_time,
+                "response_body": response_json
+            }
