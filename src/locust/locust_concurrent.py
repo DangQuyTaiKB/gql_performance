@@ -11,15 +11,13 @@ gqlurl = os.getenv("GQL_PROXY", "http://localhost:33001/api/gql")
 login_url = os.getenv("GQL_LOGIN", "http://localhost:33001/oauth/login3")
 username = os.getenv("GQL_USERNAME", "john.newbie@world.com")
 password = os.getenv("GQL_PASSWORD", "john.newbie@world.com")
-api_token = os.getenv("JTL_API_TOKEN", "at-53875e0b-7dbf-4ce7-a6a9-b94ea00829f1")
+api_token = os.getenv("JTL_API_TOKEN", "at-53875e0b-7dbf-4ce7-a6a9-b94ea00829f1") # just a local test
 
 print(gqlurl)
 print(login_url)
 print(username)
 print(password)
 print(api_token)
-
-print(dir(events))
 
 def load_user_queries():
     with open('locust_queries.json', 'r') as f:
