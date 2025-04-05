@@ -70,14 +70,14 @@
                 <div class="result-container card p-3">
                     <strong>Test Results:</strong>
                     <div class="description-container mt-2" id="description"></div>
-                    <pre class="mt-3 p-3 bg-light rounded" id="result-text">Select a test to begin...</pre>
-                    <pre class="mt-3 p-3 bg-light rounded" id="result-text">
+                    <pre class="mt-3 p-3 bg-light rounded" id="result-text">Select a test to begin...
+                     
 Sample query: 
-q = {
-    "q0": "{result: userPage(limit: 100) {id email name surname}}",
-    "q1": "{userPage {id email}}"
-}
-</pre>
+            q = {
+                "q0": "{result: userPage(limit: 100) {id email name surname}}",
+                "q1": "{userPage {id email}}"
+            }
+                    </pre>
                     <div id="report-links"></div>
                 </div>
             </div>
@@ -213,7 +213,11 @@ q = {
                            target="_blank" 
                            class="btn btn-primary mt-2">
                            Open Locust Dashboard
-                        </a>`;
+                        </a>
+                        <button class="btn btn-secondary mt-2" onclick="downloadLatestLog()">
+                           Download JTLS Report
+                        </button>
+                    `;
                 }
 
                 if (data.results.response_times) {
@@ -317,6 +321,14 @@ q = {
             logElement.scrollTop = logElement.scrollHeight;
         }
         window.onload = () => showInputs('load_test_1');
+    </script>
+    <script>
+        function downloadLatestLog() {
+            const link = document.createElement('a');
+            link.href = '/download-latest-log'; // Endpoint để tải file log
+            link.download = 'latest_jtls_report.csv'; // Tên file tải xuống
+            link.click();
+        }
     </script>
 </body>
 </html>

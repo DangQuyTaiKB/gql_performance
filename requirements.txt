@@ -5,4 +5,7 @@ aiohttp
 locust
 sqlalchemy[asyncio]
 gevent
+psutil
+glob
 python-dotenv
+

@@ -1,5 +1,5 @@
 ﻿from fastapi import FastAPI, Request, Response
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 import json
 import os
 from src.utils.getToken import getToken
@@ -8,6 +8,7 @@ from src.utils.sample_test import sample_test
 from src.utils.stress_test import stress_test_concurrent
 import subprocess
 import psutil
+import glob
 
 app = FastAPI()
 
@@ -265,6 +266,14 @@ async def web_app() -> HTMLResponse:
     Web App
     """
     return HTMLResponse(html)
+
+@app.get("/download-latest-log")
+async def download_latest_log():
+    log_files = glob.glob('logs/results_*.csv')
+    if not log_files:
+        return {"error": "No log files found"}
+    latest_log = max(log_files, key=os.path.getctime)  # Lấy file mới nhất
+    return FileResponse(latest_log, media_type='text/csv', filename=os.path.basename(latest_log))
 
 
 

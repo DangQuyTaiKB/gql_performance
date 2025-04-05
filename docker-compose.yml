@@ -1,0 +1,95 @@
+﻿version: '3.8'
+
+## !!! Warning if you are upgrading from v4 !!!
+## Please make sure you back up your data before the upgrade.
+## See https://jtlreporter.site/docs/guides/backup-and-restore-database
+## The new version uses different DB image (timescale/timescaledb-ha) https://github.com/timescale/timescaledb-docker-ha
+## The timescale/timescaledb-ha contains toolkit, which is not distributed as OSS, but as a TSL,
+## Please see https://docs.timescale.com/about/latest/timescaledb-editions/#timescaledb-community-edition
+
+services:
+  fe:
+    image: novyl/jtl-reporter-fe:v5.0.3
+    ports:
+     - "2020:80"
+    depends_on:
+      - db
+      - be
+
+  db:
+    container_name: jtl-reporter-db
+    build:
+      context: ./db/
+      dockerfile: Dockerfile
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    ports:
+      - "5400:5400"
+
+
+  be:
+    image: novyl/jtl-reporter-be:v5.0.5
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_HOST=db
+      - JWT_TOKEN=27JU4qy73hchTMLoH8w9m # please change this token
+      - JWT_TOKEN_LOGIN=GdK6TrCvX7rJRZJVg4ijt  # please change this token, the same must be used for listener service
+
+  migration:
+    image: novyl/jtl-reporter-be:v5.0.5
+    environment:
+        - DATABASE_URL=postgres://postgres@db/jtl_report
+        - OPT_OUT_ANALYTICS=true
+    command: npm run migrate up
+    depends_on:
+      db:
+        condition: service_healthy
+
+  listener:
+    image: novyl/jtl-reporter-listener-service:v2.1.2
+    ports:
+      - "6000:6000"
+    environment:
+      - DB_HOST=db
+      - JWT_TOKEN=GdK6TrCvX7rJRZJVg4ijt # paste the same token as in be service - JWT_TOKEN_LOGIN
+
+  scheduler:
+    image: novyl/jtl-reporter-scheduler:v0.0.8
+    environment:
+      - DB_HOST=db
+
+
+  gql_performace:
+    image: dangquytaikb/gql_performance:0.4.0
+    container_name: gql_performance
+    hostname: gql_performance
+    
+    environment:
+      # promenne, ktere lze cist v kontejnerfrontend
+      # có thể test từ appolo và cà frontend
+      - GQL_PROXY=http://apollo:3000/api/gql/
+      - GQL_PROXY_1=http://frontend:8000/api/gql/
+      - GQL_LOGIN=http://frontend:8000/oauth/login3
+      - USERNAME="john.newbie@world.com"
+      - PASSWORD="john.newbie@world.com"
+      - JTL_API_TOKEN="jtl_api_token"
+    ports:
+      - 33333:8000
+      - 8089:8089
+    healthcheck:
+      test: "curl -f -H 'Content-Type: application/json' -X POST -d '{\"query\":\"query{__schema{types{name}}}\"}' http://localhost:8000/gql || exit 1"
+      interval: 60s
+      retries: 3
+      start_period: 60s
+      timeout: 10s
+    restart: on-failure:3 # nedojde k restartu pokud je kontejner "unhealthy", maximalne 3 pokusy
+
+
+
+

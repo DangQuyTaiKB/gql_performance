@@ -2,6 +2,8 @@
 from gevent.pool import Pool
 import json
 import os
+from locust import events
+from jtl_listener import JtlListener
 
 gqlurl = os.getenv("GQL_PROXY", "http://frontend:8000/api/gql")
 login_url = os.getenv("GQL_LOGIN", "http://frontend:8000/oauth/login3")
@@ -77,3 +79,16 @@ class ApiAdminUser(HttpUser):
     # Tạo các task động dựa trên các query từ file JSON
     for query_name in user_queries.keys():
         locals()[f"query_{query_name}"] = task(create_query_task(query_name))
+
+
+    
+@events.init.add_listener
+def on_locust_init(environment, **_kwargs):
+    # Initialize the JTL Listener without passing the token explicitly
+    JtlListener(
+        env=environment,
+        project_name="tai_projects",
+        scenario_name="tai_senario",
+        environment="tai_environment_test",
+        backend_url="http://localhost"  # Replace with actual backend URL
+    )
