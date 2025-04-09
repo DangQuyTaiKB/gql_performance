@@ -13,7 +13,7 @@
         .button-container { gap: 10px; margin: 20px 0; }
         .button-container button { flex: 1; background-color: #007BFF; }
         .result-container { max-width: 800px; margin: 20px auto; }
-        canvas { max-width: 100%; height: 400px; }
+        /* canvas { max-width: 100%; height: 400px; } */
         .input-container { gap: 10px; margin-top: 20px; }
         .action-buttons { gap: 10px; margin-top: 15px; display: flex; justify-content: center; }
         .btn-success { background-color: #28a745 !important; border-color: #28a745; }
@@ -70,13 +70,13 @@
                 <div class="result-container card p-3">
                     <strong>Test Results:</strong>
                     <div class="description-container mt-2" id="description"></div>
-                    <pre class="mt-3 p-3 bg-light rounded" id="result-text">Select a test to begin...
-                     
+                    <pre class="mt-3 p-3 bg-light rounded" id="result-text">Select a test to begin...</pre>
+                    <pre class="mt-3 p-3 bg-light rounded" id="result-text">
 Sample query: 
-            q = {
-                "q0": "{result: userPage(limit: 100) {id email name surname}}",
-                "q1": "{userPage {id email}}"
-            }
+q = {
+    "q0": "{result: userPage(limit: 10) {id}}",
+    "q1": "{userPage {id}}"
+}
                     </pre>
                     <div id="report-links"></div>
                 </div>
@@ -154,6 +154,8 @@ Sample query:
                 'locust_parallel': `
                     <div class="input-container">
                         <h4>LOCUST PARALLEL TEST</h4>
+                        <label>Number of Parallel Requests/User:</label>
+                        <input type="number" class="form-control" value="5" id="num_parallel_requests">
                         ${querySection()}
                     </div>
                 `
@@ -182,9 +184,11 @@ Sample query:
                 <label>Query ${i+1}:</label>
                 <textarea class="form-control mb-2" id="query${i+1}" 
                     placeholder="Enter GraphQL query" rows="3"></textarea>
+                <label>Variables for Query ${i+1} (JSON):</label>
+                <textarea class="form-control mb-2" id="variables${i+1}" 
+                    placeholder="Enter variables as JSON" rows="3"></textarea>
             `).join('');
         }
-
         async function executeTest() {
             const resultText = document.getElementById('result-text');
             const description = document.getElementById('description');
@@ -193,40 +197,49 @@ Sample query:
             try {
                 const params = {
                     ...collectInputValues(),
-                    query: collectQueries()
+                    queries: collectQueries()
                 };
+                
+                // Make sure params.queries is properly formatted
+                if (!params.queries || Object.keys(params.queries).length === 0) {
+                    throw new Error('No queries provided');
+                }
+                
                 resultText.textContent = "Running test...";
                 const response = await fetch(`/${selectedEndpoint}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(params)
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
                 console.log(data);
+                
+                // Safely access nested properties
                 description.innerHTML = formatDescription(data);
                 resultText.textContent = formatResults(data);
                 
-                // Hiển thị link đến Locust Dashboard
-                if (data.results.report_url) {
+                if (data?.results?.report_url) {
                     reportLinks.innerHTML = `
                         <a href="${data.results.report_url}" 
-                           target="_blank" 
-                           class="btn btn-primary mt-2">
-                           Open Locust Dashboard
+                        target="_blank" 
+                        class="btn btn-primary mt-2">
+                        Open Locust Dashboard
                         </a>
                         <button class="btn btn-secondary mt-2" onclick="downloadLatestLog()">
-                           Download JTLS Report
+                        Download JTLS Report
                         </button>
                     `;
-                }
-
-                if (data.results.response_times) {
-                    renderChart(data.results.response_times);
                 }
                 
                 await refreshLogs();
             } catch (error) {
                 resultText.textContent = `Error: ${error.message}`;
+                console.error('Execution error:', error);
             }
         }
 
@@ -235,7 +248,6 @@ Sample query:
                 let logType = selectedEndpoint.includes('locust') 
                     ? selectedEndpoint 
                     : (currentTestType === 'stress' ? 'stress' : 'load');
-
                 const response = await fetch(`/get_logs?type=${logType}`);
                 const logs = await response.text();
                 document.getElementById('log-content').textContent = logs;
@@ -260,9 +272,11 @@ Sample query:
                 clearLogs();
             }
         }
+
         function clearLogs() {
             document.getElementById('log-content').textContent = "";
         }
+
         function collectInputValues() {
             return Array.from(document.querySelectorAll('input'))
                 .reduce((acc, input) => {
@@ -272,50 +286,37 @@ Sample query:
         }
         function collectQueries() {
             const queries = {};
-            Array.from(document.querySelectorAll('textarea')).forEach((textarea, i) => {
-                queries[`q${i}`] = textarea.value;  // q0, q1, q2...
+            const textareas = document.querySelectorAll('textarea');
+            if (!textareas.length) return queries;
+            
+            textareas.forEach((textarea) => {
+                const id = textarea.id;
+                if (id.startsWith('query')) {
+                    const index = id.replace('query', '');
+                    const variablesElement = document.getElementById(`variables${index}`);
+                    queries[`q${index}`] = {
+                        query: textarea.value || '',
+                        variables: variablesElement ? variablesElement.value || '{}' : '{}'
+                    };
+                }
             });
             return queries;
         }
+
         function formatDescription(data) {
+            const testType = selectedEndpoint ? selectedEndpoint.replace(/_/g, ' ') : 'Unknown test';
+            const queryCount = data?.query ? Object.keys(data.query).length : 0;
+            
             return `
-                <strong>Test Type:</strong> ${selectedEndpoint.replace(/_/g, ' ')}<br>
-                <em>${data.description}</em><br>
-                <strong>Queries Used:</strong> ${Object.keys(data.query).length}
+                <strong>Test Type:</strong> ${testType}<br>
+                <em>${data?.description || 'No description available'}</em><br>
+                <strong>Queries Used:</strong> ${queryCount}
             `;
         }
         function formatResults(data) {
-            return JSON.stringify(data.results, (key, value) => 
-                key === 'response_times' ? undefined : value, 2);
+            return JSON.stringify(data, null, 2); // Format JSON với thụt lề 2 khoảng trắng
         }
-        function renderChart(responseTimes) {
-            const ctx = document.getElementById('responseTimeChart').getContext('2d');
-            if (chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: responseTimes.map((_, i) => i+1),
-                    datasets: [{
-                        label: 'Response Time (seconds)',
-                        data: responseTimes,
-                        borderColor: '#007BFF',
-                        tension: 0.1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: { 
-                            beginAtZero: true,
-                            title: { display: true, text: 'Seconds' }
-                        },
-                        x: {
-                            title: { display: true, text: 'Request Sequence' }
-                        }
-                    }
-                }
-            });
-        }
+        
         function autoScrollLogs() {
             const logElement = document.getElementById('log-content');
             logElement.scrollTop = logElement.scrollHeight;

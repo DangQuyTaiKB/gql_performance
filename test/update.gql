@@ -1,0 +1,39 @@
+mutation($id: UUID!, $lastchange: DateTime!, $name: String, $surname: String, $email: String) {
+  result: userUpdate(user: {id: $id, lastchange: $lastchange, name: $name, surname: $surname, email: $email}) {
+    ...User
+    ...Error
+  }
+}
+
+fragment Error on UserGQLModelUpdateError {
+  __typename
+  failed
+  input
+  Entity {
+    ...User
+  }
+  msg
+}
+
+fragment User on UserGQLModel {
+  __typename
+  id
+  lastchange
+  name
+  surname
+  email
+  isThisMe
+  rolesOn {
+    id
+    user {
+      email
+    }
+    roletype {
+      name
+    }
+  }
+  memberOf {
+    name
+  }
+  id
+}

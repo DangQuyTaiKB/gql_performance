@@ -9,17 +9,18 @@ file_handler = logging.FileHandler("sample_test.log")
 file_handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s'))
 logger.addHandler(file_handler)
 
-async def sample_test(query, token, gqlurl):
+async def sample_test(query, token, gqlurl, variables):
     """Process queries and return response details."""
-    payload = {"query": query, "variables": {}}
+    payload = {"query": query, "variables": variables}
     cookies = {'authorization': token}
+    print("Payload in this test:", payload)
     start_time = time.time()
     async with aiohttp.ClientSession() as session:
         async with session.post(
             gqlurl,
             json=payload,
             cookies=cookies,
-            timeout=aiohttp.ClientTimeout(total=30)
+            timeout=aiohttp.ClientTimeout(total=10)
         ) as resp:
             response_time = time.time() - start_time
             response_json = await resp.json()

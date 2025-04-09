@@ -1,1 +1,1 @@
-{"q0": "{result: userPage(limit: 100) {id email name surname}}"}
+{"q1": {"query": "{result: userPage(limit: 10) {id}}", "variables": {}}, "q2": {"query": "{userPage {id}}", "variables": {}}}

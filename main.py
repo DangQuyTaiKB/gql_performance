@@ -38,23 +38,65 @@ def outfile(data, filename):
     with open(filename + '.json', 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
 ############ FastAPI ################
+
 @app.post("/load_test_1")
 async def loadTest1(request: Request):
-    description = """
-    Scenario: "Burst Load (Simulating DDoS Attack)"
-    """
+    description = "Scenario: Burst Load (Simulating DDoS Attack)"
     body = await request.json()
     num_requests = int(body.get('num_requests', 100))
     concurrent_limit = int(body.get('concurrent_limit', 5))
     token = await getToken(username, password, login_url)
-    query = body.get('query', q)  # Use the dictionary of queries
-    print(query)
-
-    results = await load_test(query, token, num_requests, concurrent_limit, gqlurl)
-    outfile(results['results'], 'response')
-    time_result = {key: value for key, value in results.items() if key != "results"}
-
-    return {"description": description, "query": query, "results": time_result}
+    
+    # Lấy và chuẩn hóa queries từ body
+    queries_input = body.get('queries', {})
+    processed_queries = {}
+    
+    for query_name, query_data in queries_input.items():
+        query_content = query_data.get('query', '')
+        query_variables = query_data.get('variables', {})
+        
+        # Chuẩn hóa variables thành dictionary
+        if isinstance(query_variables, str):
+            try:
+                query_variables = json.loads(query_variables) if query_variables.strip() else {}
+            except json.JSONDecodeError:
+                query_variables = {}
+        
+        processed_queries[query_name] = {
+            'query': query_content,
+            'variables': query_variables
+        }
+    
+    # Gọi hàm load_test gốc
+    test_results = await load_test(
+        q=processed_queries,
+        token=token,
+        num_requests=num_requests,
+        concurrent_limit=concurrent_limit,
+        url=gqlurl
+    )
+    
+    # Xử lý kết quả phù hợp với output từ hàm load_test gốc
+    outfile(test_results.get('results', []), 'response')
+    
+    return {
+        "description": description,
+        "queries": queries_input,
+        "results": {
+            "summary": {
+                "total_requests": test_results["num_requests"],
+                "successful": test_results["success_count"],
+                "failed": test_results["failure_count"],
+                "average_response_time": test_results["avg_response_time"],
+                "min_response_time": test_results["min_response_time"],
+                "max_response_time": test_results["max_response_time"],
+                "median_response_time": test_results["median_response_time"],
+                "cpu_usage": test_results["cpu_usage"],
+                "memory_usage": test_results["memory_usage"]
+            },
+            # "response_times": test_results["response_times"]
+        }
+    }
 
 @app.post("/sample_test")
 async def sampleTest_endpoint(request: Request):
@@ -62,23 +104,37 @@ async def sampleTest_endpoint(request: Request):
     Sample query test
     """
     body = await request.json()
+    print(body)
     token = await getToken(username, password, login_url)
-    query = body.get('query', q)  # Use the dictionary of queries
-    print(query)
+    queries = body.get('queries', {})  # Get the combined queries object
+    print(queries)
 
-    results = []
-    for query_name, query_content in query.items():
-        result = await sample_test(query_content, token, gqlurl)
-        results.append({
-            "query_name": query_name,
+    results = {}
+    for query_name, query_data in queries.items():
+        query_content = query_data.get('query')
+        query_variables = query_data.get('variables')
+
+        # Ensure variables is a dictionary
+        if isinstance(query_variables, str):
+            try:
+                query_variables = json.loads(query_variables)
+            except json.JSONDecodeError:
+                query_variables = {}  # Default to an empty dictionary if parsing fails
+
+        # print(f"Executing {query_name} with query: {query_content} and variables: {query_variables}")
+        
+        # Send query along with variables
+        result = await sample_test(query_content, token, gqlurl, query_variables)
+        print(f"Result for {query_name}: {result}")
+        # print(f"Result for {query_name}: {result}")
+        results[query_name] = {
             "status": result["status"],
             "response_time": result["response_time"],
             "response_body": result["response_body"]
-        })
+        }
+        print(results)
 
-    return {"description": description, "query": query, "results": results}
-
-
+    return {"description": description, "queries": queries, "results": results}
 
 @app.post("/stress_test")
 async def stress_test_endpoint(request: Request):
@@ -93,36 +149,98 @@ async def stress_test_endpoint(request: Request):
     max_limit = int(body.get('max_limit', 200))
     recovery_steps = int(body.get('recovery_steps', 40))
     token = await getToken(username, password, login_url)
-    query = body.get('query', q)  # Use the dictionary of queries
-    print(query)
-
-    results = await stress_test_concurrent(query, token, gqlurl, initial_requests, step_size, max_limit, recovery_steps)
     
-    if not isinstance(results, list):
-        results = [results]
+    # Lấy và chuẩn hóa queries từ body
+    queries_input = body.get('queries', {})
+    processed_queries = {}
+    
+    for query_name, query_data in queries_input.items():
+        query_content = query_data.get('query', '')
+        query_variables = query_data.get('variables', {})
+        
+        # Chuẩn hóa variables thành dictionary
+        if isinstance(query_variables, str):
+            try:
+                query_variables = json.loads(query_variables) if query_variables.strip() else {}
+            except json.JSONDecodeError:
+                query_variables = {}
+        
+        processed_queries[query_name] = {
+            'query': query_content,
+            'variables': query_variables
+        }
+    
+    # Gọi hàm stress_test_concurrent đã được cập nhật
+    test_results = await stress_test_concurrent(
+        q=processed_queries,
+        token=token,
+        url=gqlurl,
+        initial_load=initial_requests,
+        step_size=step_size,
+        max_limit=max_limit,
+        recovery_steps=recovery_steps
+    )
+    
+    # Chuẩn bị kết quả trả về
+    if not isinstance(test_results, list):
+        test_results = [test_results]
 
-    time_result = {"results": results} if isinstance(results, list) else {key: value for key, value in results.items() if key != "results"}
+    return {
+        "description": description,
+        "queries": queries_input,  # Trả về queries gốc từ frontend
+        "results": {
+            "phases": test_results,  # Kết quả từng phase test
+            "summary": {
+                "initial_load": initial_requests,
+                "max_reached": max_limit,
+                "total_phases": len(test_results),
+                "final_success_rate": test_results[-1]["success_rate"] if test_results else 0
+            }
+        }
+    }
 
-    return {"description": description, "query": query, "results": time_result}
 # ---------------------- Locust Endpoints ----------------------
+
 @app.post("/locust_concurrent")
 async def run_locust_concurrent_test(request: Request):
-
     description = "Locust is an open source performance/load testing tool for HTTP and other protocols. " \
-    "Its developer-friendly approach lets you define your tests in regular Python code."
+                "Its developer-friendly approach lets you define your tests in regular Python code."
 
     body = await request.json()
-    query = body.get('query', {})
+    queries = body.get('queries', {})
+    
     try:
-        # Terminate existing Locust processes
+        # Dừng các tiến trình Locust cũ
         for proc in psutil.process_iter(['pid', 'name']):
             if 'locust' in proc.info['name'].lower():
                 proc.terminate()
                 proc.wait()
         
+        # Chuẩn hóa queries và variables
+        processed_queries = {}
+        for q_name, q_data in queries.items():
+            if isinstance(q_data, str):
+                # Nếu chỉ là query string
+                processed_queries[q_name] = {"query": q_data, "variables": {}}
+            else:
+                # Nếu có cả query và variables
+                variables = q_data.get("variables", {})
+                if isinstance(variables, str):
+                    try:
+                        variables = json.loads(variables) if variables.strip() else {}
+                    except json.JSONDecodeError:
+                        variables = {}
+                
+                processed_queries[q_name] = {
+                    "query": q_data.get("query", ""),
+                    "variables": variables
+                }
+        
+        # Lưu queries vào file
         with open('locust_queries.json', 'w') as f:
-            json.dump(query, f)
+            json.dump(processed_queries, f)
 
+        # Khởi chạy Locust
         subprocess.Popen(
             [
                 "locust", 
@@ -133,26 +251,31 @@ async def run_locust_concurrent_test(request: Request):
             stderr=subprocess.STDOUT
         )
 
-        results = {
-            "status": "success",
-            "report_url": "http://localhost:8089",
+        return {
+            "description": description,
+            "queries": queries,
+            "results": {
+                "status": "success",
+                "report_url": "http://localhost:8089"
+            }
         }
 
-        # return {
-        #     "status": "success",
-        #     "report_url": "http://localhost:8089",
-        # }
-        return {"query": query, "results": results, "description": description}
-
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {
+            "status": "error",
+            "message": str(e),
+            "description": description
+        }
 
 @app.post("/locust_parallel")
 async def run_locust_parallel_test(request: Request):
     description = "Locust is an open source performance/load testing tool for HTTP and other protocols. " \
-    "Its developer-friendly approach lets you define your tests in regular Python code."
+                "Its developer-friendly approach lets you define your tests in regular Python code."
+
     body = await request.json()
-    query = body.get('query', {})
+    queries = body.get('queries', {})
+    num_parallel_requests = int(body.get('num_parallel_requests', 5))
+    
     try:
         # Terminate existing Locust processes
         for proc in psutil.process_iter(['pid', 'name']):
@@ -160,14 +283,37 @@ async def run_locust_parallel_test(request: Request):
                 proc.terminate()
                 proc.wait()
 
-        # Save queries to JSON
-        with open('locust_queries.json', 'w') as f:
-            json.dump(query, f)
+        # Process queries and variables
+        processed_queries = {}
+        for q_name, q_data in queries.items():
+            if isinstance(q_data, str):
+                # Old format: just query string
+                processed_queries[q_name] = {"query": q_data, "variables": {}}
+            else:
+                # New format: query + variables
+                variables = q_data.get("variables", {})
+                if isinstance(variables, str):
+                    try:
+                        variables = json.loads(variables) if variables.strip() else {}
+                    except json.JSONDecodeError:
+                        variables = {}
+                
+                processed_queries[q_name] = {
+                    "query": q_data.get("query", ""),
+                    "variables": variables
+                }
 
-        # Start Locust web UI
+        # Save configuration
+        with open('locust_queries.json', 'w') as f:
+            json.dump(processed_queries, f)
+
+        with open('locust_parallel_requests.txt', 'w') as f:
+            f.write(str(num_parallel_requests))
+
+        # Start Locust
         subprocess.Popen(
             [
-                "locust", 
+                "locust",
                 "-f", "src/locust/locust_parallel.py",
                 "--logfile", "locust_parallel.log"
             ],
@@ -175,19 +321,22 @@ async def run_locust_parallel_test(request: Request):
             stderr=subprocess.STDOUT
         )
 
-        # return {
-        #     "status": "success",
-        #     "report_url": "http://localhost:8089",
-        # }
-        results = {
-            "status": "success",
-            "report_url": "http://localhost:8089",
+        return {
+            "description": description,
+            "queries": queries,
+            "results": {
+                "status": "success",
+                "report_url": "http://localhost:8089",
+                "num_parallel_requests": num_parallel_requests
+            }
         }
 
-        return {"query": query, "results": results, "description": description}
-
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {
+            "status": "error",
+            "message": str(e),
+            "description": description
+        }
 
 @app.get("/get_logs")
 async def get_logs(request: Request):
@@ -234,13 +383,13 @@ async def get_logs(request: Request):
         test_type = request.query_params.get("type", "load")  # Mặc định là "load"
         
         # Xác định file log dựa trên test type
-        if test_type == "load":
+        if (test_type == "load"):
             log_file = "load_test.log"
-        elif test_type == "stress":
+        elif (test_type == "stress"):
             log_file = "stress_test.log"
-        elif test_type == "locust_concurrent":
+        elif (test_type == "locust_concurrent"):
             log_file = "locust_concurrent.log"
-        elif test_type == "locust_parallel":
+        elif (test_type == "locust_parallel"):
             log_file = "locust_parallel.log"
         else:
             return Response(content="Invalid test type.", status_code=400)

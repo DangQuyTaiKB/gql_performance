@@ -3,34 +3,35 @@ import json
 import os
 from locust import events
 from jtl_listener import JtlListener
+from random import choice
 
-# gqlurl = os.getenv("GQL_PROXY", "http://frontend:8000/api/gql")
-# login_url = os.getenv("GQL_LOGIN", "http://frontend:8000/oauth/login3")
-
+# Cấu hình endpoints
 gqlurl = os.getenv("GQL_PROXY", "http://localhost:33001/api/gql")
 login_url = os.getenv("GQL_LOGIN", "http://localhost:33001/oauth/login3")
 username = os.getenv("GQL_USERNAME", "john.newbie@world.com")
 password = os.getenv("GQL_PASSWORD", "john.newbie@world.com")
-api_token = os.getenv("JTL_API_TOKEN", "at-53875e0b-7dbf-4ce7-a6a9-b94ea00829f1") # just a local test
-
-print(gqlurl)
-print(login_url)
-print(username)
-print(password)
-print(api_token)
+api_token = os.getenv("JTL_API_TOKEN", "at-53875e0b-7dbf-4ce7-a6a9-b94ea00829f1")
 
 def load_user_queries():
+    """Load queries and variables from JSON file"""
     with open('locust_queries.json', 'r') as f:
-        return json.load(f)
+        data = json.load(f)
+        
+        # Xử lý cả trường hợp queries là string hoặc dict
+        if isinstance(data, str):
+            return {"query1": {"query": data, "variables": {}}}
+        return data
 
 user_queries = load_user_queries()
 
-def create_query_task(query_name, variables=None, expected_result=None):
-    query = user_queries.get(query_name, "")
+def create_query_task(query_name):
+    """Tạo task với query và variables tương ứng"""
+    query_data = user_queries.get(query_name, {})
+    query = query_data.get("query", "")
+    variables = query_data.get("variables", {})
+    
     if not query:
-        raise ValueError(f"Query '{query_name}' not found in user-provided queries.")
-    variables = variables or {}
-    expected_result = expected_result or {}
+        raise ValueError(f"Query '{query_name}' not found or invalid")
 
     def task_func(self):
         response = self.client.post(
@@ -41,8 +42,9 @@ def create_query_task(query_name, variables=None, expected_result=None):
             },
             name=query_name
         )
-        if expected_result:
-            assert expected_result == response.json(), f"Unexpected result for {query_name}\nExpected: {expected_result}\nGot: {response.json()}"
+        # Có thể thêm validation ở đây nếu cần
+        # if "expected_result" in query_data:
+        #     assert query_data["expected_result"] == response.json()
     
     task_func.__name__ = query_name
     return task_func
@@ -52,27 +54,31 @@ class ApiAdminUser(HttpUser):
     wait_time = between(1, 5)
 
     def on_start(self):
+        """Authentication logic (giữ nguyên)"""
         response = self.client.get("/oauth/login3")
         key_response = response.json()
 
         files = {
-            'username': (None, "john.newbie@world.com"),
-            'password': (None, "john.newbie@world.com"),
+            'username': (None, username),
+            'password': (None, password),
             "key": (None, key_response.get("key", None))
         }
         self.client.post("/oauth/login2", files=files)
 
-    # Dynamically add tasks based on user-provided queries
-    for query_name in user_queries.keys():
-        locals()[f"query_{query_name}"] = task(create_query_task(query_name))
+    @task
+    def random_query_task(self):
+        """Task chọn query ngẫu nhiên"""
+        query_name = choice(list(user_queries.keys()))
+        query_task = create_query_task(query_name)
+        query_task(self)
 
 @events.init.add_listener
 def on_locust_init(environment, **_kwargs):
-    # Initialize the JTL Listener without passing the token explicitly
+    """JTL Listener (giữ nguyên)"""
     JtlListener(
         env=environment,
         project_name="tai_projects",
         scenario_name="tai_senario",
         environment="tai_environment_test",
-        backend_url="http://localhost"  # Replace with actual backend URL
+        backend_url="http://localhost"
     )

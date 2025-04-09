@@ -22,8 +22,24 @@ logger.addHandler(file_handler)
 
 async def load_test(q, token, num_requests, concurrent_limit, url):
     async def single_request(session):
-        query = random.choice(list(q.values()))
-        payload = {"query": query, "variables": {}}
+# Chọn ngẫu nhiên một query
+        query_name = random.choice(list(q.keys()))
+        query_data = q[query_name]
+        query_text = query_data['query']
+        
+        # Xử lý variables (chuyển từ string sang dict nếu cần)
+        variables = query_data.get('variables', {})
+        if isinstance(variables, str):
+            try:
+                variables = json.loads(variables) if variables.strip() else {}
+            except json.JSONDecodeError:
+                variables = {}
+
+        payload = {
+            "query": query_text,
+            "variables": variables
+        }
+        
         cookies = {'authorization': token}
         start_time = time.time()
   
@@ -37,7 +53,7 @@ async def load_test(q, token, num_requests, concurrent_limit, url):
             end_time = time.time()
 
             # Ghi log kết quả thành công
-            logger.info(f"Request status: {resp.status}, Query: {query}")
+            logger.info(f"Request status: {resp.status}, Query: {query_text}")
             # # Ghi kết quả vào file
             # with open("response_retryable.json", "w") as f:
             #     json.dump(response_json, f)
