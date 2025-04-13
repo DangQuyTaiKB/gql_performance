@@ -72,7 +72,7 @@ class ApiAdminUser(HttpUser):
 
     def on_start(self):
         """Authentication flow (unchanged)"""
-        with self.client.get("/oauth/login3", name="[Auth] Get Login Key", json={}) as response:
+        with self.client.get("/oauth/login3", json={}) as response:
             key = response.json()
         
         self.client.post(
@@ -82,7 +82,8 @@ class ApiAdminUser(HttpUser):
                 'password': (None, password),
                 "key": (None, key.get("key", None))
             },
-            name="[Auth] Perform Login"
+            allow_redirects=True,
+            catch_response=True
         )
 
     @task

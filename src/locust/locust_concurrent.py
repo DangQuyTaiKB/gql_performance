@@ -4,7 +4,6 @@ import os
 from locust import events
 from jtl_listener import JtlListener
 from random import choice
-
 # Cấu hình endpoints
 gqlurl = os.getenv("GQL_PROXY", "http://localhost:33001/api/gql")
 login_url = os.getenv("GQL_LOGIN", "http://localhost:33001/oauth/login3")
@@ -57,13 +56,13 @@ class ApiAdminUser(HttpUser):
         """Authentication logic (giữ nguyên)"""
         response = self.client.get("/oauth/login3")
         key_response = response.json()
-
         files = {
             'username': (None, username),
             'password': (None, password),
             "key": (None, key_response.get("key", None))
         }
-        self.client.post("/oauth/login2", files=files)
+        self.client.post("/oauth/login2", files=files, allow_redirects=True, catch_response=True)
+
 
     @task
     def random_query_task(self):
