@@ -62,6 +62,10 @@
             <button class="btn btn-outline-light" onclick="showInputs('locust_parallel')">
                 Locust Parallel Test
             </button>
+            <button class="btn btn-outline-light" onclick="showInputs('locust_custom')">
+                Locust Custom Test
+            </button>
+
         </div>
         <div class="row">
             <div class="col-md-4" id="input-container"></div>
@@ -158,7 +162,14 @@ q = {
                         <input type="number" class="form-control" value="5" id="num_parallel_requests">
                         ${querySection()}
                     </div>
-                `
+                `,
+                'locust_custom': `
+                    <div class="input-container">
+                        <h4>LOCUST CUSTOM TEST</h4>
+                        ${locust_input_file()}
+                    </div>
+                `,          
+
             }[testType];
             
             document.getElementById('input-container').innerHTML = inputHTML;
@@ -175,6 +186,73 @@ q = {
                     <button class="btn btn-warning" onclick="clearAllTests()">Clear Results</button>
                 </div>
             `;
+        }
+
+        function locust_input_file() {
+            return `
+                <label>Upload Locust Custom File:</label>
+                <input type="file" id="locustFile" class="form-control" accept=".py">
+                <div class="action-buttons mt-3">
+                    <button class="btn btn-success" onclick="uploadLocustFile()">Upload and Run Test</button>
+                    <button class="btn btn-warning" onclick="clearAllTests()">Clear Results</button>
+                </div>
+            `;
+        }
+
+        async function uploadLocustFile() {
+            const fileInput = document.getElementById('locustFile');
+            const resultText = document.getElementById('result-text');
+            const description = document.getElementById('description');
+            const reportLinks = document.getElementById('report-links');
+
+            if (!fileInput.files.length) {
+                alert('Please select a file to upload.');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                // Gửi file lên server và chạy test
+                resultText.textContent = "Uploading file and running test...";
+                const response = await fetch('/locust_custom', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Hiển thị kết quả test
+                    description.innerHTML = `
+                        <strong>Test Type:</strong> Locust Custom Test<br>
+                        <em>${data.description || 'No description available'}</em>
+                    `;
+                    resultText.textContent = JSON.stringify(data.results, null, 2);
+
+                    if (data?.results?.report_url) {
+                        reportLinks.innerHTML = `
+                            <a href="${data.results.report_url}" 
+                            target="_blank" 
+                            class="btn btn-primary mt-2">
+                            Open Locust Dashboard
+                            </a>
+                            <button class="btn btn-secondary mt-2" onclick="downloadLatestLog()">
+                            Download JTLS Report
+                            </button>
+                        `;
+                    }
+                } else {
+                    alert(`Error: ${data.message}`);
+                    resultText.textContent = `Error: ${data.message}`;
+                }
+            } catch (error) {
+                console.error('Error uploading file or running test:', error);
+                resultText.textContent = `Error: ${error.message}`;
+                alert('An error occurred while uploading the file or running the test.');
+            }
         }
 
         function generateQueryInputs() {
@@ -194,7 +272,7 @@ q = {
             const description = document.getElementById('description');
             const reportLinks = document.getElementById('report-links');
             
-            try {
+            try {                
                 const params = {
                     ...collectInputValues(),
                     queries: collectQueries()
@@ -203,8 +281,8 @@ q = {
                 // Make sure params.queries is properly formatted
                 if (!params.queries || Object.keys(params.queries).length === 0) {
                     throw new Error('No queries provided');
-                }
-                
+                }            
+
                 resultText.textContent = "Running test...";
                 const response = await fetch(`/${selectedEndpoint}`, {
                     method: 'POST',
@@ -260,16 +338,22 @@ q = {
         async function clearAllTests() {
             const response = await fetch('/clear_locust', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'}
+                headers: { 'Content-Type': 'application/json' }
             });
             const data = await response.json();
             if (data.status === 'success') {
+                // Reset giao diện về trạng thái ban đầu
                 document.getElementById('result-text').textContent = 'Select a test to begin...';
                 document.getElementById('description').innerHTML = '';
                 document.getElementById('queries-container').innerHTML = '';
                 document.getElementById('report-links').innerHTML = '';
+                document.getElementById('input-container').innerHTML = ''; // Xóa nội dung input
                 if (chartInstance) chartInstance.destroy();
                 clearLogs();
+
+                // Gọi lại giao diện mặc định của test đầu tiên (ví dụ: load_test_1)
+                // showInputs('load_test_1');
+                 showInputs('locust_concurrent');
             }
         }
 

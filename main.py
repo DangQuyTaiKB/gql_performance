@@ -1,4 +1,4 @@
-﻿from fastapi import FastAPI, Request, Response
+﻿from fastapi import FastAPI, Request, Response, File, UploadFile
 from fastapi.responses import HTMLResponse, FileResponse
 import json
 import os
@@ -337,6 +337,60 @@ async def run_locust_parallel_test(request: Request):
             "message": str(e),
             "description": description
         }
+    
+@app.post("/locust_custom")
+async def run_locust_custom_test(file: UploadFile = File(...)):
+    description = "Locust is an open source performance/load testing tool for HTTP and other protocols. " \
+                  "Its developer-friendly approach lets you define your tests in regular Python code."
+
+    try:
+        # Lưu file được tải lên vào thư mục src/locust
+        # file_location = os.path.join("src", "locust", "locust_test.py")
+        file_location = "src/locust/locust_test.py"
+        with open(file_location, "wb") as f:
+            f.write(await file.read())
+
+        # Dừng các tiến trình Locust đang chạy
+        for proc in psutil.process_iter(['pid', 'name']):
+            if 'locust' in proc.info['name'].lower():
+                proc.terminate()
+                proc.wait()
+
+        # Khởi chạy Locust với file vừa tải lên
+        subprocess.Popen(
+            [
+                "locust",
+                "-f", file_location,
+                "--logfile", "locust_custom.log"
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT
+        )
+
+        return {
+            "description": description,
+            "results": {
+                "status": "success",
+                "report_url": "http://localhost:8089"
+            }
+        }
+
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e),
+            "description": description
+        }
+
+@app.post("/upload-locust-file")
+async def upload_locust_file(file: UploadFile = File(...)):
+    try:
+        file_location = os.path.join("src", "locust", "input_file", file.filename)
+        with open(file_location, "wb") as f:
+            f.write(await file.read())
+        return {"status": "success", "message": f"File saved to {file_location}"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @app.get("/get_logs")
 async def get_logs(request: Request):
@@ -405,6 +459,7 @@ async def get_logs(request: Request):
         return Response(content="No logs found yet. Run a test first.", status_code=404)
     except Exception as e:
         return Response(content=f"Error reading logs: {str(e)}", status_code=500)
+
 
 with open("src/html/index.html", encoding='utf-8', errors='ignore') as f:
     html = f.read()

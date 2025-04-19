@@ -7,4 +7,5 @@ sqlalchemy[asyncio]
 gevent
 psutil
 python-dotenv
+python-multipart
 
