@@ -1,1 +1,1 @@
-{"q1": {"query": "{result: userPage(limit: 10) {id}}", "variables": {}}}
+{"q1": {"query": "sss", "variables": {}}}

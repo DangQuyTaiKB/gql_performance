@@ -192,6 +192,7 @@ q = {
             return `
                 <label>Upload Locust Custom File:</label>
                 <input type="file" id="locustFile" class="form-control" accept=".py">
+                <div id="queries-container" class="mt-2"></div>
                 <div class="action-buttons mt-3">
                     <button class="btn btn-success" onclick="uploadLocustFile()">Upload and Run Test</button>
                     <button class="btn btn-warning" onclick="clearAllTests()">Clear Results</button>
@@ -204,6 +205,7 @@ q = {
             const resultText = document.getElementById('result-text');
             const description = document.getElementById('description');
             const reportLinks = document.getElementById('report-links');
+
 
             if (!fileInput.files.length) {
                 alert('Please select a file to upload.');
@@ -248,6 +250,7 @@ q = {
                     alert(`Error: ${data.message}`);
                     resultText.textContent = `Error: ${data.message}`;
                 }
+                await refreshLogs();
             } catch (error) {
                 console.error('Error uploading file or running test:', error);
                 resultText.textContent = `Error: ${error.message}`;
@@ -341,21 +344,27 @@ q = {
                 headers: { 'Content-Type': 'application/json' }
             });
             const data = await response.json();
-            if (data.status === 'success') {
-                // Reset giao diện về trạng thái ban đầu
-                document.getElementById('result-text').textContent = 'Select a test to begin...';
-                document.getElementById('description').innerHTML = '';
-                document.getElementById('queries-container').innerHTML = '';
-                document.getElementById('report-links').innerHTML = '';
-                document.getElementById('input-container').innerHTML = ''; // Xóa nội dung input
-                if (chartInstance) chartInstance.destroy();
-                clearLogs();
 
-                // Gọi lại giao diện mặc định của test đầu tiên (ví dụ: load_test_1)
-                // showInputs('load_test_1');
-                 showInputs('locust_concurrent');
+            // Reset giao diện về trạng thái ban đầu
+            document.getElementById('result-text').textContent = 'Select a test to begin...';
+            document.getElementById('description').innerHTML = '';
+            document.getElementById('queries-container').innerHTML = '';
+            document.getElementById('report-links').innerHTML = ''; // Xóa các nút Open Locust Dashboard và Download JTLS Report
+            document.getElementById('input-container').innerHTML = ''; // Xóa nội dung input
+            if (chartInstance) chartInstance.destroy();
+            clearLogs();
+            // showInputs('locust_concurrent');
+            // Xóa tên file cũ trong khu vực "Choose File"
+            const fileInput = document.getElementById('locustFile');
+            if (fileInput) {
+                fileInput.value = ''; // Reset giá trị của input file
             }
+
+            // Gọi lại giao diện mặc định của test đầu tiên (ví dụ: load_test_1)
+            showInputs('sample_test'); // Hoặc test đầu tiên bạn muốn hiển thị
         }
+
+
 
         function clearLogs() {
             document.getElementById('log-content').textContent = "";
@@ -405,7 +414,7 @@ q = {
             const logElement = document.getElementById('log-content');
             logElement.scrollTop = logElement.scrollHeight;
         }
-        window.onload = () => showInputs('load_test_1');
+        window.onload = () => showInputs('sample_test');
     </script>
     <script>
         function downloadLatestLog() {

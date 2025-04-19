@@ -1,5 +1,4 @@
 ﻿from locust import HttpUser, task, between
-import uuid 
 import random
 from locust import events
 from jtl_listener import JtlListener
@@ -20,82 +19,72 @@ class OptimizedLocustUser(HttpUser):
         },
         allow_redirects=True, catch_response=True)
 
+
     @task
-    def user_insert(self):
-        """Mutation for inserting a new user"""
-        USER_INSERT_MUTATION = """
-            mutation UserInsert($id: UUID, $name: String) {
-                result: userInsert(user: {id: $id, name: $name}) {
-                    id
-                    msg
-                    result: user {
-                        __typename
-                        id
-                        lastchange
-                        name
-                    }
-                }
+    def update_role(self):
+        """Mutation with automatic lastchange handling"""
+        test_role_id = "5f0c2596-931f-11ed-9b95-0242ac110002"
+        ROLE_TYPE_QUERY = """
+            query RoleTypeById($id: UUID!) {
+            result: roleTypeById(id: $id) {
+                ...RoleType
+            }
+            }
+            fragment RoleType on RoleTypeGQLModel {
+            id
+            lastchange
+            name
+            nameEn
+            created
             }
         """
-        
+
+        ROLE_UPDATE_MUTATION = """
+            mutation RoleTypeUpdate($id: UUID!, $lastchange: DateTime!, $name: String) {
+            result: roleTypeUpdate(roleType: {id: $id, lastchange: $lastchange, name: $name}) {
+                id
+                msg
+                result: roleType {
+                ...RoleType
+                }
+            }
+            }
+            fragment RoleType on RoleTypeGQLModel {
+            id
+            lastchange
+            name
+            nameEn
+            created
+            }
+        """
+        response = self.client.post(
+            "/api/gql",
+            json={
+                "query": ROLE_TYPE_QUERY,
+                "variables": {"id": test_role_id}
+            },
+            name="get_role_by_id"
+        )
+        response_data = response.json()
+        role_data = response_data.get("data", {}).get("result", {})
+        last_change = role_data.get("lastchange", None)
+
+
         mutation_vars = {
-            "id": str(uuid.uuid4()),  # Generate random UUID
-            "name": f"TestUser_{random.randint(1, 10000)}"
+            "id": test_role_id,
+            "name": f"Updated_{random.randint(1, 10000)}",
+            "lastchange": last_change
         }
 
         response = self.client.post(
             "/api/gql",
             json={
-                "query": USER_INSERT_MUTATION,
+                "query": ROLE_UPDATE_MUTATION,
                 "variables": mutation_vars
             },
-            name="user_insert"
+            name="update_role"  # Name for statistics
         )
 
-    @task(3)
-    def page_query(self):
-        """Query for planned lessons page"""
-        PAGE_QUERY = """
-            query Page($skip: Int, $limit: Int, $where: PlannedLessonInputFilter) {
-                result: plannedLessonPage(skip: $skip, limit: $limit, where: $where) {
-                    ...Lesson
-                }
-            }
-            
-            fragment Lesson on PlannedLessonGQLModel {
-                __typename
-                id
-                name
-                lastchange
-                rbacObject { id }
-                type { id }
-                order
-                length
-                linkedTo { __typename id name }
-                linkedWith { __typename id name }
-                users { id }
-                groups { id }
-                facilities { id }
-                event { id }
-                semester { id }
-                plan { __typename id name }
-            }
-        """
-        
-        query_vars = {
-            "skip": 0,
-            "limit": 10,
-            "where": None  # You can add filter conditions here if needed
-        }
-
-        response = self.client.post(
-            "/api/gql",
-            json={
-                "query": PAGE_QUERY,
-                "variables": query_vars
-            },
-            name="planned_lesson_page"
-        )
 
 @events.init.add_listener
 def on_locust_init(environment, **_kwargs):
